@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from staff.models import Employe  # Importation du modèle Employe depuis l'application staff
+from staff.models import Employe
 
 class User(AbstractUser):
     """Modèle utilisateur personnalisé"""
