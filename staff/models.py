@@ -1,6 +1,4 @@
 from django.db import models
-from django.utils import timezone
-from accounts.models import User
 
 class Employe(models.Model):
     """Informations détaillées des employés"""
@@ -11,7 +9,7 @@ class Employe(models.Model):
         ('veuf', 'Veuf/Veuve'),
     ]
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employe')
+    user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name='employe')
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     date_naissance = models.DateField()
@@ -108,7 +106,7 @@ class Conge(models.Model):
     nombre_jours = models.IntegerField()
     motif = models.TextField()
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
-    approuve_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='conges_approuves')
+    approuve_par = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name='conges_approuves')
     date_demande = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -120,7 +118,7 @@ class Evaluation(models.Model):
     employe = models.ForeignKey(Employe, on_delete=models.CASCADE, related_name='evaluations')
     date_evaluation = models.DateField()
     periode_evaluee = models.CharField(max_length=100)
-    evaluateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    evaluateur = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True)
     
     objectifs = models.TextField()
     realisations = models.TextField()
@@ -156,7 +154,7 @@ class Incident(models.Model):
     description = models.TextField()
     sanction = models.CharField(max_length=20, choices=SANCTION_CHOICES, blank=True)
     date_sanction = models.DateField(null=True, blank=True)
-    signale_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    signale_par = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True)
     
     class Meta:
         db_table = 'incidents'

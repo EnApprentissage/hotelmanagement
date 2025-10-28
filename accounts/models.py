@@ -3,7 +3,6 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from staff.models import Employe  # Importation du modèle Employe depuis l'application staff
 
 class User(AbstractUser):
     """Modèle utilisateur personnalisé"""
@@ -35,6 +34,8 @@ class User(AbstractUser):
 def create_employe(sender, instance, created, **kwargs):
     """Crée un Employe pour les rôles liés au personnel si nécessaire"""
     if created and instance.role in ['receptionniste', 'resto_staff', 'bar_staff', 'comptable', 'gouvernante', 'menage']:
+        # ✅ Import différé pour éviter l'import circulaire
+        from staff.models import Employe  
         Employe.objects.get_or_create(user=instance, defaults={
             'nom': instance.last_name,
             'prenom': instance.first_name,

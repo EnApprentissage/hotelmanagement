@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'reservations',
     'resto',
     'staff',
+    'parametrage',
 ]
 
 MIDDLEWARE = [

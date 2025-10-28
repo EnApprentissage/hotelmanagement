@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from clients.models import Client
 from reservations.models import Reservation
-from resto_bar.models import Commande
+from resto.models import Commande
 from accounts.models import User
 
 class Facture(models.Model):
