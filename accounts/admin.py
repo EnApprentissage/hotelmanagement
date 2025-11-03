@@ -20,11 +20,10 @@ class CustomUserAdmin(UserAdmin):
     # === Affichage dans la liste des utilisateurs ===
     list_display = (
         'username', 'email', 'first_name', 'last_name', 'role', 'phone',
-        'is_active_employee', 'is_staff', 'is_superuser', 'date_joined'
+        'is_active_employee', 'is_staff', 'is_superuser'
     )
     list_filter = (
-        'role', 'is_active_employee', 'is_staff', 'is_superuser',
-        'date_joined', 'last_login'
+        'role', 'is_active_employee', 'is_staff', 'is_superuser', 'last_login'
     )
     search_fields = ('username', 'email', 'first_name', 'last_name', 'phone')
     ordering = ('-date_joined',)

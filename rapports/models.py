@@ -1,7 +1,7 @@
 # reports/models.py
 from django.db import models
 from django.utils import timezone
-from datetime import date
+from decimal import Decimal
 
 
 class ReportQuerySet(models.QuerySet):
@@ -14,15 +14,12 @@ class ReportQuerySet(models.QuerySet):
 
 
 class DailyReport(models.Model):
-    """
-    Rapport journalier agrégé (calculé chaque nuit ou via tâche Celery)
-    """
     date = models.DateField(unique=True, default=timezone.now)
     
     # Occupation
     chambres_total = models.PositiveIntegerField()
     chambres_occupees = models.PositiveIntegerField()
-    taux_occupation = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)  # %
+    taux_occupation = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     # Réservations
     reservations_nouvelles = models.PositiveIntegerField(default=0)
@@ -33,7 +30,7 @@ class DailyReport(models.Model):
     ca_hebergement = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     ca_restauration = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     ca_bar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    ca_autres = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    # ca_autres = SUPPRIMÉ
     ca_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     # ADR & RevPAR
@@ -44,7 +41,6 @@ class DailyReport(models.Model):
     clients_nouveaux = models.PositiveIntegerField(default=0)
     clients_recurrents = models.PositiveIntegerField(default=0)
 
-    # Création
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -59,14 +55,29 @@ class DailyReport(models.Model):
         return f"Rapport du {self.date}"
 
     def save(self, *args, **kwargs):
-        # Calcul auto du taux d'occupation
-        if self.chambres_total > 0:
+        # === CONVERSION SÉCURISÉE EN Decimal ===
+        ca_h = self.ca_hebergement or Decimal('0')
+        ca_r = self.ca_restauration or Decimal('0')
+        ca_b = self.ca_bar or Decimal('0')
+
+        # === CALCULS ===
+        self.ca_total = ca_h + ca_r + ca_b
+
+        if self.chambres_total and self.chambres_total > 0:
             self.taux_occupation = round(
-                (self.chambres_occupees / self.chambres_total) * 100, 2
+                (Decimal(self.chambres_occupees) / Decimal(self.chambres_total)) * 100, 2
             )
-        # CA total
-        self.ca_total = (
-            self.ca_hebergement + self.ca_restauration +
-            self.ca_bar + self.ca_autres
-        )
+        else:
+            self.taux_occupation = Decimal('0.00')
+
+        if self.chambres_occupees and self.chambres_occupees > 0:
+            self.adr = ca_h / Decimal(self.chambres_occupees)
+        else:
+            self.adr = Decimal('0.00')
+
+        if self.chambres_total and self.chambres_total > 0:
+            self.revpar = ca_h / Decimal(self.chambres_total)
+        else:
+            self.revpar = Decimal('0.00')
+
         super().save(*args, **kwargs)

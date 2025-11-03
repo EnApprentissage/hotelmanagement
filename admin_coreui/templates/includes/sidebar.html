@@ -316,6 +316,134 @@
   </ul>
 </li>
 
+<!-- ===== PARAMÈTRES GLOBAUX ===== -->
+<li class="nav-title">PARAMÈTRES</li>
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-settings' %}"></use>
+    </svg>
+    Variables Globales
+  </a>
+  <ul class="nav-group-items compact">
+
+    <!-- 1. Liste complète -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Toutes les variables
+      </a>
+    </li>
+
+    <!-- 2. Groupes (filtrés par URL) -->
+    <li class="nav-divider"></li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Hôtel & Établissement
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Tarifs & Prix
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Règles & Politiques
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Facturation & Taxes
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Emails & SMS
+      </a>
+    </li>
+
+    <!-- 3. Actions -->
+    <li class="nav-divider"></li>
+    <li class="nav-item">
+      <a class="nav-link text-success" href="">
+        <svg class="nav-icon">
+          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
+        </svg>
+        Ajouter une variable
+      </a>
+    </li>
+
+  </ul>
+</li>
+
+<!-- ===== ADMINISTRATION SYSTÈME ===== -->
+{% if user.is_superuser or user.is_staff %}
+<li class="nav-title">SYSTÈME</li>
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-cog' %}"></use>
+    </svg>
+    Configuration Système
+  </a>
+  <ul class="nav-group-items compact">
+
+    <!-- 1. Configuration (SystemConfig) -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Paramètres système
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-success" href="{% url 'core:config_create' %}">
+        <svg class="nav-icon">
+          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
+        </svg>
+        Ajouter un paramètre
+      </a>
+    </li>
+
+    <!-- 2. Journaux (ActionLog) -->
+    <li class="nav-divider"></li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'core:log_list' %}">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Journaux d'activité
+      </a>
+    </li>
+
+    <!-- 3. Notifications -->
+    <li class="nav-divider"></li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Notifications
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-success" href="">
+        <svg class="nav-icon">
+          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
+        </svg>
+        Envoyer une notification
+      </a>
+    </li>
+
+  </ul>
+</li>
+{% endif %}
+
+
+
     <li class="nav-title">Components</li>
 
     <li class="nav-group">
