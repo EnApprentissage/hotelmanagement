@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'resto',
     'staff',
     'parametrage',
+    'rapports',
 ]
 
 MIDDLEWARE = [

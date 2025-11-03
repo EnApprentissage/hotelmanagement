@@ -66,13 +66,13 @@
 
     {% if request.user.is_authenticated and not request.user.is_superuser %}
 
-    <li class="nav-title">Theme</li>
+    <li class="nav-title">Menu</li>
     
     <li class="nav-item"><a class="nav-link" href="{% url 'colors' %}">
       <svg class="nav-icon"  version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
         <title>drop</title>
         <path d="M12 23.166c-4.443 0-8.058-3.615-8.058-8.058-0-0.006-0-0.014-0-0.021 0-1.785 0.585-3.434 1.574-4.764l-0.015 0.021 5.867-9.164c0.135-0.209 0.368-0.346 0.632-0.346s0.496 0.136 0.63 0.343l0.002 0.003 5.867 9.164c0.974 1.309 1.559 2.958 1.559 4.743 0 0.007 0 0.015-0 0.022v-0.001c0 4.443-3.615 8.058-8.058 8.058zM12 2.975l-5.248 8.198q-0.014 0.021-0.029 0.041c-0.8 1.068-1.281 2.416-1.281 3.876 0 0.006 0 0.012 0 0.019v-0.001c0 3.616 2.942 6.558 6.558 6.558s6.558-2.942 6.558-6.558c0-0.005 0-0.012 0-0.018 0-1.46-0.481-2.807-1.293-3.893l0.012 0.017q-0.015-0.020-0.029-0.041z"></path>
-        </svg> Colors</a>
+        </svg> Clients</a>
       </li>
 
     <li class="nav-item"><a class="nav-link" href="{% url 'typography' %}">
@@ -80,8 +80,241 @@
         <title>pencil</title>
         <path d="M22.029 1.971c-0.754-0.754-1.795-1.22-2.944-1.22s-2.191 0.466-2.944 1.22l-12.773 12.773-2.258 6.657c-0.040 0.113-0.063 0.243-0.063 0.378 0 0.323 0.132 0.616 0.344 0.827l0.004 0.004c0.211 0.212 0.503 0.344 0.826 0.344h0c0.136-0 0.266-0.023 0.388-0.066l-0.008 0.003 6.657-2.258 12.773-12.773c0.754-0.754 1.22-1.795 1.22-2.944s-0.466-2.191-1.22-2.944v0zM8.443 19.325l-5.702 1.934 1.934-5.702 9.785-9.785 3.767 3.767zM20.969 6.799l-1.68 1.68-3.767-3.767 1.68-1.68c0.482-0.483 1.149-0.783 1.886-0.783 1.471 0 2.664 1.193 2.664 2.664 0 0.737-0.299 1.404-0.783 1.886l-0 0z"></path>
         </svg>
-        Typography</a>
+        Chambres</a>
     </li>
+
+   <li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-calendar' %}"></use>
+    </svg>
+    Réservation
+  </a>
+
+  <ul class="nav-group-items compact">
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Liste des réservations
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Nouvelle réservation
+        <span class="badge rounded-pill bg-info ms-auto">New</span>
+      </a>
+    </li>
+    
+
+
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Calendrier
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Arrivées du jour
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Départs du jour
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Check-in / Check-out
+      </a>
+    </li>
+  </ul>
+</li>
+
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-basket' %}"></use>
+    </svg>
+    Resto / Bar
+  </a>
+
+  <ul class="nav-group-items compact">
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Commandes
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Nouvelle commande
+        <span class="badge rounded-pill bg-info ms-auto">New</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Commandes en cours
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Historique des commandes
+      </a>
+    </li>
+  </ul>
+</li>
+
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-file' %}"></use>
+    </svg>
+    Facturation
+  </a>
+
+  <ul class="nav-group-items compact">
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Liste des factures
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Créer une facture
+        <span class="badge rounded-pill bg-info ms-auto">New</span>
+      </a>
+    </li>
+  </ul>
+</li>
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-box' %}"></use>
+    </svg>
+    Inventaire / Stock
+  </a>
+
+  <ul class="nav-group-items compact">
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Produits
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Mouvement
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Demande de réappro
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Alertes
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Inventaire physique
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Signalements
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Dotation
+      </a>
+    </li>
+  </ul>
+</li>
+
+<li class="nav-group">
+  <a class="nav-link nav-group-toggle" href="#">
+    <svg class="nav-icon">
+      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-chart-pie' %}"></use>
+    </svg>
+    Rapports & Statistiques
+  </a>
+  <ul class="nav-group-items compact">
+
+    <!-- Occupation -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Rapport d'occupation
+      </a>
+    </li>
+
+    <!-- Chiffre d'affaires -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Chiffre d'affaires
+      </a>
+    </li>
+
+    <!-- Réservations -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Rapport réservation
+      </a>
+    </li>
+
+    <!-- Rapport financier -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Rapport financier
+      </a>
+    </li>
+
+    <!-- Meilleurs clients -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Meilleurs clients
+      </a>
+    </li>
+
+    <!-- Export de données -->
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Export de données
+      </a>
+    </li>
+
+  </ul>
+</li>
 
     <li class="nav-title">Components</li>
 
