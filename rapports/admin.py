@@ -1,7 +1,5 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.http import HttpResponseRedirect
-from django.urls import reverse
 from .models import DailyReport
 
 
@@ -27,21 +25,42 @@ class DailyReportAdmin(admin.ModelAdmin):
     date_hierarchy = 'date'
     ordering = ('-date',)
 
-    # Organisation du formulaire
+    # Organisation du formulaire - CHAMPS CALCULÉS RETIRÉS
     fieldsets = (
         ('Période', {'fields': ('date',)}),
-        ('Occupation', {'fields': ('chambres_total', 'chambres_occupees', 'taux_occupation')}),
-        ('Réservations', {'fields': ('reservations_nouvelles', 'reservations_annulees', 'no_show')}),
-        ('Revenus', {'fields': ('ca_hebergement', 'ca_restauration', 'ca_bar', 'ca_total')}),
-        ('Indicateurs', {'fields': ('adr', 'revpar')}),
-        ('Clients', {'fields': ('clients_nouveaux', 'clients_recurrents')}),
+        ('Occupation', {
+            'fields': ('chambres_total', 'chambres_occupees')
+        }),
+        ('Réservations', {
+            'fields': ('reservations_nouvelles', 'reservations_annulees', 'no_show')
+        }),
+        ('💰 Revenus (REQUIS pour calcul ADR/RevPAR)', {
+            'fields': ('ca_hebergement', 'ca_restauration', 'ca_bar'),
+            'description': '⚠️ Le CA Hébergement est obligatoire pour calculer ADR et RevPAR'
+        }),
+        ('Clients', {
+            'fields': ('clients_nouveaux', 'clients_recurrents')
+        }),
+        # Section pour VISUALISER les valeurs calculées (en readonly)
+        ('📊 Indicateurs calculés automatiquement', {
+            'fields': ('taux_occupation', 'ca_total', 'adr', 'revpar'),
+            'description': 'Ces valeurs sont calculées automatiquement lors de la sauvegarde.'
+        }),
         ('Métadonnées', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
 
-    readonly_fields = ('created_at', 'updated_at')
+    # Tous les champs calculés en readonly
+    readonly_fields = (
+        'taux_occupation', 
+        'ca_total', 
+        'adr', 
+        'revpar', 
+        'created_at', 
+        'updated_at'
+    )
 
     # === FORMATTAGE VISUEL ===
 
@@ -81,7 +100,6 @@ class DailyReportAdmin(admin.ModelAdmin):
     revpar_formate.admin_order_field = 'revpar'
 
     # === Permissions ===
-    # Ici, on autorise tout (ajout, modification, suppression)
     def has_add_permission(self, request):
         return True
 

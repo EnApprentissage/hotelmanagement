@@ -12,7 +12,7 @@ class Employe(models.Model):
     user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name='employe')
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
-    date_naissance = models.DateField()
+    date_naissance = models.DateField(null=True, blank=True)
     lieu_naissance = models.CharField(max_length=100, blank=True)
     nationalite = models.CharField(max_length=50)
     etat_civil = models.CharField(max_length=20, choices=ETAT_CIVIL_CHOICES)
@@ -25,8 +25,8 @@ class Employe(models.Model):
     
     poste = models.CharField(max_length=100)
     departement = models.CharField(max_length=100)
-    date_embauche = models.DateField()
-    salaire = models.DecimalField(max_digits=10, decimal_places=2)
+    date_embauche = models.DateField(null=True, blank=True)
+    salaire = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     cv = models.FileField(upload_to='cv_employes/', blank=True, null=True)
     contrat = models.FileField(upload_to='contrats/', blank=True, null=True)

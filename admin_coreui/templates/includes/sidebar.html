@@ -68,26 +68,38 @@
 
     <li class="nav-title">Menu</li>
     
-    <li class="nav-item"><a class="nav-link" href="{% url 'colors' %}">
-      <svg class="nav-icon"  version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <title>drop</title>
-        <path d="M12 23.166c-4.443 0-8.058-3.615-8.058-8.058-0-0.006-0-0.014-0-0.021 0-1.785 0.585-3.434 1.574-4.764l-0.015 0.021 5.867-9.164c0.135-0.209 0.368-0.346 0.632-0.346s0.496 0.136 0.63 0.343l0.002 0.003 5.867 9.164c0.974 1.309 1.559 2.958 1.559 4.743 0 0.007 0 0.015-0 0.022v-0.001c0 4.443-3.615 8.058-8.058 8.058zM12 2.975l-5.248 8.198q-0.014 0.021-0.029 0.041c-0.8 1.068-1.281 2.416-1.281 3.876 0 0.006 0 0.012 0 0.019v-0.001c0 3.616 2.942 6.558 6.558 6.558s6.558-2.942 6.558-6.558c0-0.005 0-0.012 0-0.018 0-1.46-0.481-2.807-1.293-3.893l0.012 0.017q-0.015-0.020-0.029-0.041z"></path>
-        </svg> Clients</a>
-      </li>
+    <li class="nav-item">
+     <a class="nav-link" href="{% url 'colors' %}">
+      <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <title>user-follow</title>
+        <path d="M9.75 0.75c-2.898 0.003-5.247 2.352-5.25 5.25v3.735c0.001 0.658 0.17 1.277 0.468 1.815l-0.010-0.019 1.287 2.359-3.414 2.219c-1.033 0.676-1.706 1.828-1.706 3.137 0 0.002 0 0.005 0 0.007v-0 3.997h13.5v-1.5h-12v-2.497c0-0.001 0-0.003 0-0.004 0-0.785 0.404-1.477 1.015-1.877l0.009-0.005 4.578-2.976-1.952-3.578c-0.173-0.311-0.274-0.682-0.275-1.077v-3.735c0-2.071 1.679-3.75 3.75-3.75s3.75 1.679 3.75 3.75v0 3.735c-0 0.395-0.102 0.766-0.281 1.089l0.006-0.012-1.952 3.579 3.352 2.179v-1.789l-1.37-0.89 1.287-2.359c0.288-0.519 0.457-1.137 0.458-1.796v-3.735c-0.003-2.898-2.352-5.247-5.25-5.25h-0z"></path>
+        <path d="M19.875 18.75v-3h-1.5v3h-3v1.5h3v3h1.5v-3h3v-1.5h-3z"></path>
+        </svg>
+        Clients
+      </a>
+    </li>
+
+      </a>
+    </li>
 
     <li class="nav-item"><a class="nav-link" href="{% url 'typography' %}">
-      <svg  class="nav-icon"  version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <title>pencil</title>
-        <path d="M22.029 1.971c-0.754-0.754-1.795-1.22-2.944-1.22s-2.191 0.466-2.944 1.22l-12.773 12.773-2.258 6.657c-0.040 0.113-0.063 0.243-0.063 0.378 0 0.323 0.132 0.616 0.344 0.827l0.004 0.004c0.211 0.212 0.503 0.344 0.826 0.344h0c0.136-0 0.266-0.023 0.388-0.066l-0.008 0.003 6.657-2.258 12.773-12.773c0.754-0.754 1.22-1.795 1.22-2.944s-0.466-2.191-1.22-2.944v0zM8.443 19.325l-5.702 1.934 1.934-5.702 9.785-9.785 3.767 3.767zM20.969 6.799l-1.68 1.68-3.767-3.767 1.68-1.68c0.482-0.483 1.149-0.783 1.886-0.783 1.471 0 2.664 1.193 2.664 2.664 0 0.737-0.299 1.404-0.783 1.886l-0 0z"></path>
-        </svg>
-        Chambres</a>
+      <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <title>room</title>
+      <path d="M20.625 19.875v-15.75h-4.125v-3.515l-12.375 2.134v17.132h-3.375v1.5h4.074l11.676 1.611v-17.361h2.625v15.75h4.125v-1.5zM15 21.264l-9.375-1.293v-15.965l9.375-1.616z"></path>
+      <path d="M12 10.875h1.5v3h-1.5v-3z"></path>
+      </svg>Chambres
+    </a>
     </li>
 
    <li class="nav-group">
   <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-calendar' %}"></use>
-    </svg>
+    <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <title>library-add</title>
+      <path d="M2.25 21.75v-15h-1.5v15.375c0 0.621 0.504 1.125 1.125 1.125v0h15.375v-1.5h-15z"></path>
+      <path d="M6.75 18.75h-1.5v-15h-1.5v15.375c0 0.621 0.504 1.125 1.125 1.125v0h15.375v-1.5h-13.5z"></path>
+      <path d="M22.125 0.75h-14.25c-0.621 0-1.125 0.504-1.125 1.125v0 14.25c0 0.621 0.504 1.125 1.125 1.125v0h14.25c0.621 0 1.125-0.504 1.125-1.125v0-14.25c0-0.621-0.504-1.125-1.125-1.125v0zM21.75 15.75h-13.5v-13.5h13.5z"></path>
+      <path d="M14.25 13.5h1.5v-3.938h3.938v-1.5h-3.938v-3.938h-1.5v3.938h-3.938v1.5h3.938v3.938z"></path>
+      </svg>
     Réservation
   </a>
 
@@ -141,9 +153,11 @@
 
 <li class="nav-group">
   <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-basket' %}"></use>
-    </svg>
+    <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <title>restaurant</title>
+      <path d="M10.5 7.5h-2.25v-5.25h-1.5v5.25h-2.25v-5.25h-1.5v5.813c0 2.133 1.624 3.909 3.75 4.252v9.81h1.5v-9.81c2.126-0.343 3.75-2.119 3.75-4.252v-5.813h-1.5zM7.5 10.875c-1.304 0-2.415-0.784-2.828-1.875h5.656c-0.413 1.091-1.524 1.875-2.828 1.875z"></path>
+       <path d="M19.386 1.884c-3.139 0.496-5.511 3.183-5.511 6.424v0 7.818h4.875v6h1.5v-20.374zM18.75 14.625h-3.375v-6.318c-0-0.007-0-0.016-0-0.024 0-2.174 1.396-4.021 3.34-4.695l0.035-0.011z"></path>
+      </svg>
     Resto / Bar
   </a>
 
@@ -151,26 +165,60 @@
     <li class="nav-item">
       <a class="nav-link" href="">
         <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Commandes
+        Produits bar
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="">
         <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Nouvelle commande
+        Produits restaurant
+      </a>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Commandes bar
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Commandes restaurant
+      </a>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Nouvelle commande bar
         <span class="badge rounded-pill bg-info ms-auto">New</span>
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="">
         <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Commandes en cours
+        Nouvelle commande resto
+        <span class="badge rounded-pill bg-info ms-auto">New</span>
+      </a>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Commandes en cours bar
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="">
         <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Historique des commandes
+        Commandes en cours resto
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Historique des commandes bar
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="">
+        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
+        Historique des commandes resto
       </a>
     </li>
   </ul>
@@ -179,9 +227,14 @@
 
 <li class="nav-group">
   <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-file' %}"></use>
-    </svg>
+    <svg class="nav-icon"version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <title>featured-playlist</title>
+      <path d="M21.75 3.375h-19.5c-0.828 0-1.5 0.672-1.5 1.5v0 14.25c0 0.828 0.672 1.5 1.5 1.5v0h19.5c0.828 0 1.5-0.672 1.5-1.5v0-14.25c0-0.828-0.672-1.5-1.5-1.5v0zM21.75 19.125h-19.5v-14.25h19.5v14.25z"></path>
+      <path d="M10.875 8.625h8.625v1.5h-8.625v-1.5z"></path>
+      <path d="M8.25 12h11.25v1.5h-11.25v-1.5z"></path>
+      <path d="M8.25 15.375h11.25v1.5h-11.25v-1.5z"></path>
+      <path d="M4.168 6.75v6.043l4.649-3.254-4.649-2.789z"></path>
+      </svg>
     Facturation
   </a>
 
@@ -204,9 +257,18 @@
 
 <li class="nav-group">
   <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-box' %}"></use>
-    </svg>
+    <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <title>industry</title>
+      <path d="M21.528 4.5l-6.153 6.080v-6.080h-1.618l-5.882 5.966v-9.716h-7.125v22.5h22.5v-18.75zM21.75 21.75h-19.5v-19.5h4.125v10.125h1.724l5.776-5.859v5.859h1.817l6.058-5.986z"></path>
+      <path d="M6.375 15.375v0.375h1.5v-1.5h-1.5v1.125z"></path>
+      <path d="M6.375 17.625h1.5v1.5h-1.5v-1.5z"></path>
+      <path d="M10.125 15.375v0.375h1.5v-1.5h-1.5v1.125z"></path>
+      <path d="M10.125 17.625h1.5v1.5h-1.5v-1.5z"></path>
+      <path d="M13.875 15.375v0.375h1.5v-1.5h-1.5v1.125z"></path>
+      <path d="M13.875 17.625h1.5v1.5h-1.5v-1.5z"></path>
+      <path d="M17.625 14.25h1.5v1.5h-1.5v-1.5z"></path>
+      <path d="M17.625 17.625h1.5v1.5h-1.5v-1.5z"></path>
+      </svg>
     Inventaire / Stock
   </a>
 
@@ -258,9 +320,12 @@
 
 <li class="nav-group">
   <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-chart-pie' %}"></use>
-    </svg>
+    <svg class="nav-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <title>chart</title>
+      <path d="M5.813 6.375h-4.125c-0.518 0.001-0.937 0.42-0.938 0.937v15c0.001 0.518 0.42 0.937 0.937 0.938h4.125c0.518-0.001 0.937-0.42 0.938-0.937v-15c-0.001-0.518-0.42-0.937-0.937-0.938h-0zM5.25 21.75h-3v-13.875h3z"></path>
+      <path d="M14.063 11.25h-4.125c-0.518 0.001-0.937 0.42-0.938 0.937v10.125c0.001 0.518 0.42 0.937 0.937 0.938h4.125c0.518-0.001 0.937-0.42 0.938-0.937v-10.125c-0.001-0.518-0.42-0.937-0.937-0.938h-0zM13.5 21.75h-3v-9h3z"></path>
+      <path d="M22.313 0.75h-4.125c-0.518 0.001-0.937 0.42-0.938 0.937v20.625c0.001 0.518 0.42 0.937 0.937 0.938h4.125c0.518-0.001 0.937-0.42 0.938-0.937v-20.625c-0.001-0.518-0.42-0.937-0.937-0.938h-0zM21.75 21.75h-3v-19.5h3z"></path>
+      </svg>
     Rapports & Statistiques
   </a>
   <ul class="nav-group-items compact">
@@ -315,132 +380,6 @@
 
   </ul>
 </li>
-
-<!-- ===== PARAMÈTRES GLOBAUX ===== -->
-<li class="nav-title">PARAMÈTRES</li>
-
-<li class="nav-group">
-  <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-settings' %}"></use>
-    </svg>
-    Variables Globales
-  </a>
-  <ul class="nav-group-items compact">
-
-    <!-- 1. Liste complète -->
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Toutes les variables
-      </a>
-    </li>
-
-    <!-- 2. Groupes (filtrés par URL) -->
-    <li class="nav-divider"></li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Hôtel & Établissement
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Tarifs & Prix
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Règles & Politiques
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Facturation & Taxes
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Emails & SMS
-      </a>
-    </li>
-
-    <!-- 3. Actions -->
-    <li class="nav-divider"></li>
-    <li class="nav-item">
-      <a class="nav-link text-success" href="">
-        <svg class="nav-icon">
-          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
-        </svg>
-        Ajouter une variable
-      </a>
-    </li>
-
-  </ul>
-</li>
-
-<!-- ===== ADMINISTRATION SYSTÈME ===== -->
-{% if user.is_superuser or user.is_staff %}
-<li class="nav-title">SYSTÈME</li>
-
-<li class="nav-group">
-  <a class="nav-link nav-group-toggle" href="#">
-    <svg class="nav-icon">
-      <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-cog' %}"></use>
-    </svg>
-    Configuration Système
-  </a>
-  <ul class="nav-group-items compact">
-
-    <!-- 1. Configuration (SystemConfig) -->
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Paramètres système
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link text-success" href="{% url 'core:config_create' %}">
-        <svg class="nav-icon">
-          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
-        </svg>
-        Ajouter un paramètre
-      </a>
-    </li>
-
-    <!-- 2. Journaux (ActionLog) -->
-    <li class="nav-divider"></li>
-    <li class="nav-item">
-      <a class="nav-link" href="{% url 'core:log_list' %}">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Journaux d'activité
-      </a>
-    </li>
-
-    <!-- 3. Notifications -->
-    <li class="nav-divider"></li>
-    <li class="nav-item">
-      <a class="nav-link" href="">
-        <span class="nav-icon"><span class="nav-icon-bullet"></span></span>
-        Notifications
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link text-success" href="">
-        <svg class="nav-icon">
-          <use xlink:href="{% static 'vendors/@coreui/icons/svg/free.svg#cil-plus' %}"></use>
-        </svg>
-        Envoyer une notification
-      </a>
-    </li>
-
-  </ul>
-</li>
-{% endif %}
 
 
 

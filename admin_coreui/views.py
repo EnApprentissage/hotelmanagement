@@ -12,7 +12,22 @@ from django.views.generic import CreateView
 
 
 def index(request):
-    return render(request, 'index.html')
+    context = {}
+    if request.user.is_authenticated and request.user.role == 'manager':
+        context['is_manager'] = True
+    elif request.user.is_authenticated and request.user.role == 'receptionniste':
+        context['is_receptionniste'] = True
+    elif request.user.is_authenticated and request.user.role == 'comptable':
+        context['is_comptable'] = True
+    elif request.user.is_authenticated and request.user.role == 'resto_staff':
+        context['is_resto_staff'] = True
+    elif request.user.is_authenticated and request.user.role == 'bar_staff':
+        context['is_bar_staff'] = True
+    elif request.user.is_authenticated and request.user.role == 'gouvernante':
+        context['is_gouvernante'] = True
+    elif request.user.is_authenticated and request.user.role == 'menage':
+        context['is_menage'] = True
+    return render(request, 'index.html', context)
 
 @login_required(login_url="login")
 def accordion(request):
