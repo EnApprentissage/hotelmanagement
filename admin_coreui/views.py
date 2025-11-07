@@ -27,6 +27,8 @@ def index(request):
         context['is_gouvernante'] = True
     elif request.user.is_authenticated and request.user.role == 'menage':
         context['is_menage'] = True
+    elif request.user.is_authenticated and request.user.role == 'ressource_humaine':
+        context['is_ressource_humaine'] = True
     return render(request, 'index.html', context)
 
 @login_required(login_url="login")

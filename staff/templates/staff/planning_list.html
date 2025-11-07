@@ -1,0 +1,168 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Planning du Personnel{% endblock %}
+
+{% block extra_css %}
+<style>
+  .planning-badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+  }
+  .table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+  }
+  .action-icon {
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">
+      <i class="fa fa-calendar-alt me-2 text-primary"></i> Planning du Personnel
+    </h5>
+    <a href="{% url 'staff:planning_create' %}" class="btn btn-primary btn-sm">
+      <i class="fa fa-plus"></i> Ajouter un planning
+    </a>
+  </div>
+
+  <!-- Filtres -->
+  <form method="get" class="mb-4">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <input type="date" name="date_debut" class="form-control form-control-sm" value="{{ request.GET.date_debut }}">
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="date_fin" class="form-control form-control-sm" value="{{ request.GET.date_fin }}">
+      </div>
+      <div class="col-md-3">
+        <select name="employe" class="form-select form-select-sm">
+          <option value="">Tous les employés</option>
+          {% for emp in employes %}
+            <option value="{{ emp.id }}" {% if request.GET.employe == emp.id|stringformat:"s" %}selected{% endif %}>
+              {{ emp.prenom }} {{ emp.nom }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+          <i class="fa fa-filter"></i> Filtrer
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tableau des plannings -->
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Employé</th>
+          <th>Période</th>
+          <th>Heures</th>
+          <th>Poste assigné</th>
+          <th>Notes</th>
+          <th class="text-center" width="100">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for planning in plannings %}
+          <tr>
+            <td class="text-nowrap">{{ planning.date|date:"d/m/Y" }}</td>
+            <td>
+              <div class="fw-medium">{{ planning.employe.prenom }} {{ planning.employe.nom }}</div>
+              <small class="text-muted">#{{ planning.employe.id }}</small>
+            </td>
+            <td>
+              {% if planning.periode == 'jour' %}
+                <span class="badge bg-success planning-badge">Jour</span>
+              {% elif planning.periode == 'soir' %}
+                <span class="badge bg-warning planning-badge">Soir</span>
+              {% else %}
+                <span class="badge bg-dark planning-badge">Nuit</span>
+              {% endif %}
+            </td>
+            <td class="text-nowrap small">
+              {{ planning.heure_debut|time:"H\\hi" }} - {{ planning.heure_fin|time:"H\\hi" }}
+            </td>
+            <td>
+              {% if planning.poste_assigne %}
+                <span class="text-info small">{{ planning.poste_assigne|slice:":15" }}{% if planning.poste_assigne|length > 15 %}...{% endif %}</span>
+              {% else %}—
+              {% endif %}
+            </td>
+            <td>
+              <small class="text-muted">
+                {% if planning.notes %}
+                  {{ planning.notes|truncatewords:8 }}
+                {% else %}—
+                {% endif %}
+              </small>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'staff:planning_update' planning.pk %}" class="text-warning me-2 action-icon" title="Modifier" data-bs-toggle="tooltip">
+                <i class="icon cil-pencil"></i>
+              </a>
+              <i class="icon cil-trash text-danger action-icon" 
+                 title="Supprimer" 
+                 data-bs-toggle="tooltip" 
+                 onclick="confirmDelete({{ planning.id }})">
+              </i>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="fa fa-calendar-times fa-3x mb-3 opacity-25"></i>
+              <p>Aucun planning trouvé</p>
+              <a href="{% url 'staff:planning_create' %}" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Créer le premier
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+    <nav class="mt-4">
+      <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">First</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Next</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Last</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function confirmDelete(id) {
+    if (confirm("Supprimer ce planning ?")) {
+      window.location.href = "{% url 'staff:planning_delete' 999 %}".replace('999', id);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+  });
+</script>
+{% endblock %}

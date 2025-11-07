@@ -1,10 +1,10 @@
 class StaffTemplate:
 
-    list_template = "staff/staff_list.html"
-    detail_template = "staff/staff_detail.html"
-    update_template = "staff/staff_update.html"
-    create_template = "staff/staff_form_create.html"
-   
+    list_template = "staff/employe_list.html"
+    detail_template = "staff/employe_detail.html"
+    update_template = "staff/employe_update.html"
+    create_template = "staff/employe_form_create.html"
+
 
 class PointageTemplate:
     

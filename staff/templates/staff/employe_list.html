@@ -1,0 +1,210 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Employés{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .employee-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+  }
+  .table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #495057;
+  }
+  .badge-status {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+  }
+  .action-icon {
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            const nom = this.closest('tr').querySelector('td:first-child').textContent;  // Récupère le nom pour personnaliser
+
+            Swal.fire({
+                title: 'Confirmer la suppression ?',
+                text: `Êtes-vous sûr de vouloir supprimer "${nom}" ? Cette action est irréversible.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Oui, supprimer !',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // AJAX POST avec CSRF
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,  // Changed to .value
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.url_redirect) {
+                            Swal.fire('Supprimé !', 'Le produit a été supprimée.', 'success')
+                                .then(() => {
+                                    window.location.href = data.url_redirect;  // Redirige vers la liste
+                                });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Erreur !', 'Une erreur est survenue lors de la suppression.', 'error');
+                        console.error('Erreur:', error);
+                    });
+                }
+            });
+        });
+    });
+});
+</script>
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4"></div>
+  </header>
+
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">
+      <i class="fa fa-users me-2 text-primary"></i> Liste des Employés
+    </h5>
+    <button type="button" class="btn btn-sm btn-primary js-create-entity"
+      data-url="{% url 'staff:employe_create' %}">
+      <i class="fa fa-plus"></i> Ajouter
+    </button>
+  </div>
+
+  <!-- Filtres simples -->
+  <form method="get" class="mb-4">
+    <div class="row g-3">
+      <div class="col-md-5">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="fa fa-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Nom, prénom, email..." value="{{ request.GET.q }}">
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tableau -->
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="text-center" width="60">Photo</th>
+          <th>Employé</th>
+          <th>Poste</th>
+          <th>Dépt</th>
+          <th>Contact</th>
+          <th class="text-center">Embauche</th>
+          <th class="text-center" width="110">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for employe in employes %}
+          <tr>
+            <td class="text-center">
+              {% if employe.photo %}
+                <img src="{{ employe.photo.url }}" alt="{{ employe.prenom }}" class="rounded-circle employee-avatar">
+              {% else %}
+                <div class="rounded-circle bg-light text-dark d-inline-flex align-items-center justify-content-center" 
+                     style="width:40px;height:40px;font-size:0.9rem;">
+                  {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="fw-medium">{{ employe.nom }} {{ employe.prenom }}</div>
+              <small class="text-muted">#{{ employe.id }}</small>
+            </td>
+            <td>
+              {% if employe.poste %}
+                <span class="badge bg-info-subtle text-info badge-status">{{ employe.poste }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if employe.departement %}
+                {{ employe.departement|slice:":12" }}{% if employe.departement|length > 12 %}...{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <small>
+                <div><i class="fa fa-phone text-muted"></i> {{ employe.phone|default:"—" }}</div>
+                <div><i class="fa fa-envelope text-muted"></i> {{ employe.email|slice:":20" }}{% if employe.email|length > 20 %}...{% endif %}</div>
+              </small>
+            </td>
+            <td class="text-center text-muted small">
+              {{ employe.date_embauche|date:"d/m/Y" }}
+            </td>
+
+            <!-- Icônes d'action -->
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-warning js-update-entity"
+                  data-url="{% url 'staff:employe_update' employe.pk %}">
+                  <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="btn btn-danger btn-sm delete-btn"
+                  data-url="{% url 'staff:employe_delete' employe.pk %}">
+                  <i class="fas fa-trash"></i>
+              </button>
+              <a href="{% url 'staff:employe_detail' employe.pk %}" class="text-success" title="Voir"><i class="icon cil-folder-open"></i></a>
+              <a href="{% url 'staff:employe_update' employe.pk %}" class="text-warning" title="Modifier"><i class="icon cil-pencil"></i></a>
+              <i class="icon cil-trash text-danger action-icon" title="Supprimer" onclick="confirmDelete({{ employe.id }})"></i>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="fa fa-users fa-3x mb-3 opacity-25"></i>
+              <p>Aucun employé trouvé</p>
+              <a href="{% url 'staff:employe_create' %}" class="btn btn-primary btn-sm">
+                <i class="fa fa-plus"></i> Ajouter le premier
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+    <nav class="mt-4">
+      <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">«</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">‹</a></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">›</a></li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">»</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock content %}
+
+

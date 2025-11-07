@@ -1,4 +1,5 @@
 from django.db import models
+from parametrage.reference_generator import ReferenceGenerator
 
 class Employe(models.Model):
     """Informations détaillées des employés"""
@@ -16,6 +17,7 @@ class Employe(models.Model):
     lieu_naissance = models.CharField(max_length=100, blank=True)
     nationalite = models.CharField(max_length=50)
     etat_civil = models.CharField(max_length=20, choices=ETAT_CIVIL_CHOICES)
+    matricule = models.CharField(max_length=50, unique=True, blank=True, null=True)
     
     adresse = models.TextField()
     ville = models.CharField(max_length=100)
@@ -46,6 +48,17 @@ class Employe(models.Model):
     
     def __str__(self):
         return f"{self.prenom} {self.nom} - {self.poste}"
+    
+    def save(self, *args, **kwargs):
+        # Génération automatique du matricule si vide
+        if not self.matricule:
+            self.matricule = ReferenceGenerator.generate_reference(
+                model_class=Employe,     # Modèle concerné
+                field_name='matricule',  # Champ de référence
+                prefix='EMP',            # Préfixe du matricule
+                nombre=4                 # Longueur du numéro (0001)
+            )
+        super().save(*args, **kwargs)
 
 class Planning(models.Model):
     """Planning de travail des employés"""

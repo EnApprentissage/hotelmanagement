@@ -15,6 +15,7 @@ class User(AbstractUser):
         ('comptable', 'Comptable/Caissier'),
         ('gouvernante', 'Gouvernante'),
         ('menage', 'Femme de chambre'),
+        ('ressource_humaine', 'Ressource Humaine'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, default='')  # Ajoute blank=True et default
@@ -33,7 +34,7 @@ class User(AbstractUser):
 @receiver(post_save, sender=User)
 def create_employe(sender, instance, created, **kwargs):
     """Crée un Employe pour les rôles liés au personnel si nécessaire"""
-    if created and instance.role in ['receptionniste', 'resto_staff', 'bar_staff', 'comptable', 'gouvernante', 'menage']:
+    if created and instance.role in ['receptionniste', 'resto_staff', 'bar_staff', 'comptable','ressource_humaine', 'gouvernante', 'menage']:
         # ✅ Import différé pour éviter l'import circulaire
         from staff.models import Employe  
         Employe.objects.get_or_create(user=instance, defaults={

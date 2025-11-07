@@ -1,0 +1,60 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Détails de {{ employe.nom }}{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4"></div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5>Détails de {{ employe.nom }} {{ employe.prenom }}</h5>
+      </div>
+      <div class="card-body row">
+        <div class="col-md-3 text-center mb-3">
+          {% if employe.photo %}
+            <img src="{{ employe.photo.url }}" class="rounded-circle shadow-sm" width="120" height="120">
+          {% else %}
+            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width:120px;height:120px;font-size:2rem;">
+              {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-9">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Compte utilisateur:</strong> {{ employe.poste }} - {{ employe.departement|default:"—" }}</li>
+            <li class="list-group-item"><strong>Nom:</strong> {{ employe.nom }}</li>
+            <li class="list-group-item"><strong>Prénom:</strong> {{ employe.prenom }}</li>
+            <li class="list-group-item"><strong>Date de naissance:</strong> {{ employe.date_naissance|date:"d/m/Y"|default:"—" }}</li>
+            <li class="list-group-item"><strong>Lieu de naissance:</strong> {{ employe.lieu_naissance|default:"—" }}</li>
+            <li class="list-group-item"><strong>Nationalité:</strong> {{ employe.nationalite|default:"—" }}</li>
+            <li class="list-group-item"><strong>État civil:</strong> {{ employe.etat_civil|default:"—" }}</li>
+            <li class="list-group-item"><strong>Adresse:</strong> {{ employe.adresse|default:"—" }}</li>
+            <li class="list-group-item"><strong>Ville:</strong> {{ employe.ville|default:"—" }}</li>
+            <li class="list-group-item"><strong>Pays:</strong> {{ employe.pays|default:"—" }}</li>
+            <li class="list-group-item"><strong>Téléphone:</strong> {{ employe.phone|default:"—" }}</li>
+            <li class="list-group-item"><strong>Email:</strong> {{ employe.email|default:"—" }}</li>
+            <li class="list-group-item"><strong>Date d'embauche:</strong> {{ employe.date_embauche|date:"d/m/Y"|default:"—" }}</li>
+            <li class="list-group-item"><strong>Salaire:</strong> {{ employe.salaire|default:"—" }}</li>
+            <li class="list-group-item"><strong>CV:</strong> {% if employe.cv %}<a href="{{ employe.cv.url }}" target="_blank">Voir le fichier</a>{% else %}No file chosen{% endif %}</li>
+            <li class="list-group-item"><strong>Contrat:</strong> {% if employe.contrat %}<a href="{{ employe.contrat.url }}" target="_blank">Voir le fichier</a>{% else %}No file chosen{% endif %}</li>
+            <li class="list-group-item"><strong>Nom contact d'urgence:</strong> {{ employe.nom_contact_urgence|default:"—" }}</li>
+            <li class="list-group-item"><strong>Téléphone contact d'urgence:</strong> {{ employe.phone_contact_urgence|default:"—" }}</li>
+            <li class="list-group-item"><strong>Relation contact d'urgence:</strong> {{ employe.relation_contact_urgence|default:"—" }}</li>
+          </ul>
+
+          <div class="mt-3">
+            <a href="{% url 'staff:employe_update' employe.pk %}" class="btn btn-warning"><i class="fa fa-edit"></i> Modifier</a>
+            <a href="{% url 'staff:employe_list' %}" class="btn btn-secondary">Retour</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

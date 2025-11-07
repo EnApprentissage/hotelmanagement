@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'staff',
     'parametrage',
     'rapports',
+    'django_filters',
 ]
 
 MIDDLEWARE = [

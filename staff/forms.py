@@ -5,60 +5,63 @@ from .models import Employe, Planning, Pointage, Conge, Evaluation, Incident
 # ============================
 # Formulaire Employé
 # ============================
+
 class EmployeForm(forms.ModelForm):
     class Meta:
         model = Employe
         fields = [
-            'user', 'nom', 'prenom', 'date_naissance', 'lieu_naissance',
-            'nationalite', 'etat_civil', 'adresse', 'ville', 'pays',
-            'phone', 'email', 'poste', 'departement', 'date_embauche',
-            'salaire', 'cv', 'contrat', 'photo',
-            'contact_urgence_nom', 'contact_urgence_phone', 'contact_urgence_relation'
+            'nom',
+            'prenom',
+            'date_naissance',
+            'lieu_naissance',
+            'nationalite',
+            'etat_civil',
+            'adresse',
+            'ville',
+            'pays',
+            'phone',
+            'email',
+            'poste',
+            'departement',
+            'date_embauche',
+            'salaire',
+            'cv',
+            'contrat',
+            'photo',
+            'contact_urgence_nom',
+            'contact_urgence_phone',
+            'contact_urgence_relation',
         ]
-        labels = {
-            'user': "Compte utilisateur",
-            'nom': "Nom",
-            'prenom': "Prénom",
-            'date_naissance': "Date de naissance",
-            'lieu_naissance': "Lieu de naissance",
-            'nationalite': "Nationalité",
-            'etat_civil': "État civil",
-            'adresse': "Adresse",
-            'ville': "Ville",
-            'pays': "Pays",
-            'phone': "Téléphone",
-            'email': "Email",
-            'poste': "Poste",
-            'departement': "Département",
-            'date_embauche': "Date d'embauche",
-            'salaire': "Salaire",
-            'cv': "CV",
-            'contrat': "Contrat",
-            'photo': "Photo",
-            'contact_urgence_nom': "Nom contact d'urgence",
-            'contact_urgence_phone': "Téléphone contact d'urgence",
-            'contact_urgence_relation': "Relation contact d'urgence",
-        }
+
         widgets = {
-            'date_naissance': forms.DateInput(attrs={'type': 'date'}),
-            'date_embauche': forms.DateInput(attrs={'type': 'date'}),
-            'etat_civil': forms.Select(),
-            'adresse': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Adresse complète'}),
-            'cv': forms.FileInput(),
-            'contrat': forms.FileInput(),
-            'photo': forms.FileInput(),
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom': forms.TextInput(attrs={'class': 'form-control'}),
+            'date_naissance': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'lieu_naissance': forms.TextInput(attrs={'class': 'form-control'}),
+            'nationalite': forms.TextInput(attrs={'class': 'form-control'}),
+            'etat_civil': forms.Select(attrs={'class': 'form-select'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ville': forms.TextInput(attrs={'class': 'form-control'}),
+            'pays': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'poste': forms.TextInput(attrs={'class': 'form-control'}),
+            'departement': forms.TextInput(attrs={'class': 'form-control'}),
+            'date_embauche': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'salaire': forms.NumberInput(attrs={'class': 'form-control'}),
+            'cv': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'contrat': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'contact_urgence_nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_urgence_phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_urgence_relation': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if email and Employe.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("Cet email est déjà utilisé.")
-        return email
-
+    # Exemple de validation personnalisée
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-        if phone and not phone.startswith('+'):
-            raise forms.ValidationError("Le numéro doit commencer par + (ex: +243).")
+        if phone and not phone.isdigit():
+            raise forms.ValidationError("Le numéro de téléphone doit contenir uniquement des chiffres.")
         return phone
 
 # ============================

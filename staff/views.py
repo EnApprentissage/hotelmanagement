@@ -1,11 +1,15 @@
 # staff/views.py
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+
+from hotel_management_system.base_views import BaseAjaxCreateView
+from django.utils.translation import gettext_lazy as _
 from .models import Employe, Planning, Pointage, Conge, Evaluation, Incident
 from .forms import (
     EmployeForm, PlanningForm, PointageForm,
     CongeForm, EvaluationForm, IncidentForm
 )
+from .template import   StaffTemplate
 
 
 # ==================== EMPLOYE ====================
@@ -21,11 +25,21 @@ class EmployeDetailView(DetailView):
     template_name = 'staff/employe_detail.html'
 
 
-class EmployeCreateView(CreateView):
+class EmployeCreateView(BaseAjaxCreateView):
     model = Employe
     form_class = EmployeForm
-    template_name = 'staff/employe_form.html'
+    template_name = StaffTemplate.create_template
     success_url = reverse_lazy('staff:employe_list')
+    success_message = _('Employé créé avec succès')
+
+    def form_valid(self, form):
+        # Override pour génération de code si needed
+        instance = form.save(commit=False)
+        if not instance.code:
+            instance.code = instance.generate_code()
+        instance.save()
+        return super().form_valid(form)
+
 
 
 class EmployeUpdateView(UpdateView):
@@ -54,13 +68,20 @@ class PlanningCreateView(CreateView):
     form_class = PlanningForm
     template_name = 'staff/planning_form.html'
     success_url = reverse_lazy('staff:planning_list')
-
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employes'] = Employe.objects.all().order_by('prenom', 'nom')
+        return context
 
 class PlanningUpdateView(UpdateView):
     model = Planning
     form_class = PlanningForm
     template_name = 'staff/planning_form.html'
     success_url = reverse_lazy('staff:planning_list')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employes'] = Employe.objects.all().order_by('prenom', 'nom')
+        return context
 
 
 class PlanningDeleteView(DeleteView):
