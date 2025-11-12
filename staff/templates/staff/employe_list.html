@@ -11,200 +11,376 @@
     object-fit: cover;
     border: 1px solid #ddd;
   }
-  .table th {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #495057;
-  }
   .badge-status {
     font-size: 0.7rem;
     padding: 0.25em 0.5em;
-  }
-  .action-icon {
-    cursor: pointer;
-    font-size: 1.1rem;
   }
 </style>
 {% endblock extra_css %}
 
 {% block content %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = this.getAttribute('data-url');
-            const nom = this.closest('tr').querySelector('td:first-child').textContent;  // Récupère le nom pour personnaliser
-
-            Swal.fire({
-                title: 'Confirmer la suppression ?',
-                text: `Êtes-vous sûr de vouloir supprimer "${nom}" ? Cette action est irréversible.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Oui, supprimer !',
-                cancelButtonText: 'Annuler'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // AJAX POST avec CSRF
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,  // Changed to .value
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({})
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.url_redirect) {
-                            Swal.fire('Supprimé !', 'Le produit a été supprimée.', 'success')
-                                .then(() => {
-                                    window.location.href = data.url_redirect;  // Redirige vers la liste
-                                });
-                        }
-                    })
-                    .catch(error => {
-                        Swal.fire('Erreur !', 'Une erreur est survenue lors de la suppression.', 'error');
-                        console.error('Erreur:', error);
-                    });
-                }
-            });
-        });
-    });
-});
-</script>
 <div class="wrapper d-flex flex-column min-vh-100">
   <header class="header header-sticky p-0 mb-4">
     {% include 'includes/navbar.html' %}
-    <div class="container-fluid px-4"></div>
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a>
+          </li>
+          <li class="breadcrumb-item active"><span>Employés</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
   </header>
+  <div class="container-fluid px-4 py-3">
 
-<div class="container-fluid px-4 py-3">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="mb-0">
-      <i class="fa fa-users me-2 text-primary"></i> Liste des Employés
-    </h5>
-    <button type="button" class="btn btn-sm btn-primary js-create-entity"
-      data-url="{% url 'staff:employe_create' %}">
-      <i class="fa fa-plus"></i> Ajouter
-    </button>
-  </div>
-
-  <!-- Filtres simples -->
-  <form method="get" class="mb-4">
-    <div class="row g-3">
-      <div class="col-md-5">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text"><i class="fa fa-search"></i></span>
-          <input type="text" name="q" class="form-control" placeholder="Nom, prénom, email..." value="{{ request.GET.q }}">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0">
+        <i class="fa fa-users me-2 text-primary"></i> Liste des Employés
+      </h5>
+      <button type="button" class="btn btn-sm btn-primary js-create-entity" title="Ajouter nouveau employé"
+        data-url="{% url 'staff:employe_create' %}">
+        <i class="cil-user-plus"></i> 
+      </button>
+    </div>
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-md-6">
+            <input type="text" name="search" class="form-control form-control-sm"
+                  placeholder="Rechercher un employé (nom, matricule, poste...)"
+                  value="{{ search }}">
+          </div>
+          <div class="col-md-4">
+            <select name="departement" class="form-select form-select-sm">
+              <option value="">— Tous les départements —</option>
+              {% for dep in departements %}
+                <option value="{{ dep }}" {% if dep == selected_departement %}selected{% endif %}>
+                  {{ dep }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-primary" title="filtre">
+              <i class="cil-magnifying-glass"></i> 
+            </button>
+            <a href="{% url 'staff:employe_list' %}" class="btn btn-sm btn-secondary" title="initialise">
+              <i class="cil-loop-circular"></i>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Tableau -->
+    <div class="card"> 
+      <div class="card-header d-flex align-items-center gap-2 bg-primary">
+        <i class="icon ico-xxl cil-group me-2"></i>
+        <h5 class="card-title mb-0">Employés</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead>
+              <tr>
+                <th class="text-center"> No</th>
+                <th class="text-center" width="60">Photo</th>
+                <th>Employé</th>
+                <th>Poste</th>
+                <th>Département</th>
+                <th>Contact</th>
+                <th class="text-center">Embauche</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for employe in employes %}
+                <tr>
+                  <td class="text-center"> {{ forloop.counter }}</td>
+                  <td class="text-center">
+                    {% if employe.photo %}
+                      <img src="{{ employe.photo.url }}" alt="{{ employe.prenom }}" class="rounded-circle employee-avatar">
+                    {% else %}
+                      <div class="rounded-circle bg-light text-dark d-inline-flex align-items-center justify-content-center"
+                          style="width:40px;height:40px;font-size:0.9rem;">
+                        {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="fw-medium">{{ employe.nom }} {{ employe.prenom }}</div>
+                    <small class="text-muted fw-bold">{{ employe.matricule }}</small>
+                  </td>
+                  <td>{{ employe.poste|default:"—" }}</td>
+                  <td>{{ employe.departement|default:"—" }}</td>
+                  <td>
+                    <small>
+                      <div><i class="fa fa-phone text-muted"></i> {{ employe.phone|default:"—" }}</div>
+                      <div><i class="fa fa-envelope text-muted"></i> {{ employe.email|default:"—" }}</div>
+                    </small>
+                  </td>
+                  <td class="text-center text-muted small">
+                    {% if employe.date_embauche %}
+                      {{ employe.date_embauche|date:"d/m/Y" }}
+                    {% else %}
+                    <span class="badge bg-warning text-dark">non defini</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a href="{% url 'staff:employe_detail' employe.pk %}" class="text-success" title="voir detail">
+                      <i class="icon cil-folder-open"></i></a>
+                    <button type="button" class="btn btn-sm text-warning js-update-entity" title="modifié"
+                            data-url="{% url 'staff:employe_update' employe.pk %}">
+                      <i class="icon cil-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm text-warning js-upload-entity" title="fichier"
+                            data-url="{% url 'staff:employe_update' employe.pk %}">
+                      <i class="icon cil-file"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm text-danger delete-btn" title="supprimé"
+                            data-url="{% url 'staff:employe_delete' employe.pk %}"
+                            data-name="{{ employe.nom }} {{ employe.prenom }}">
+                      <i class="icon cil-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa fa-users fa-3x mb-3 opacity-25"></i>
+                    <p>Aucun employé trouvé</p>
+                    <button type="button" class="btn btn-sm btn-primary js-create-entity"
+                      data-url="{% url 'staff:employe_create' %}">
+                      <i class="fa fa-plus"></i> Ajouter
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-  </form>
-
-  <!-- Tableau -->
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th class="text-center" width="60">Photo</th>
-          <th>Employé</th>
-          <th>Poste</th>
-          <th>Dépt</th>
-          <th>Contact</th>
-          <th class="text-center">Embauche</th>
-          <th class="text-center" width="110">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for employe in employes %}
-          <tr>
-            <td class="text-center">
-              {% if employe.photo %}
-                <img src="{{ employe.photo.url }}" alt="{{ employe.prenom }}" class="rounded-circle employee-avatar">
-              {% else %}
-                <div class="rounded-circle bg-light text-dark d-inline-flex align-items-center justify-content-center" 
-                     style="width:40px;height:40px;font-size:0.9rem;">
-                  {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
-                </div>
-              {% endif %}
-            </td>
-            <td>
-              <div class="fw-medium">{{ employe.nom }} {{ employe.prenom }}</div>
-              <small class="text-muted">#{{ employe.id }}</small>
-            </td>
-            <td>
-              {% if employe.poste %}
-                <span class="badge bg-info-subtle text-info badge-status">{{ employe.poste }}</span>
-              {% else %}—{% endif %}
-            </td>
-            <td>
-              {% if employe.departement %}
-                {{ employe.departement|slice:":12" }}{% if employe.departement|length > 12 %}...{% endif %}
-              {% else %}—{% endif %}
-            </td>
-            <td>
-              <small>
-                <div><i class="fa fa-phone text-muted"></i> {{ employe.phone|default:"—" }}</div>
-                <div><i class="fa fa-envelope text-muted"></i> {{ employe.email|slice:":20" }}{% if employe.email|length > 20 %}...{% endif %}</div>
-              </small>
-            </td>
-            <td class="text-center text-muted small">
-              {{ employe.date_embauche|date:"d/m/Y" }}
-            </td>
-
-            <!-- Icônes d'action -->
-            <td class="text-center">
-              <button type="button" class="btn btn-sm btn-warning js-update-entity"
-                  data-url="{% url 'staff:employe_update' employe.pk %}">
-                  <i class="fas fa-edit"></i>
-              </button>
-              <button type="button" class="btn btn-danger btn-sm delete-btn"
-                  data-url="{% url 'staff:employe_delete' employe.pk %}">
-                  <i class="fas fa-trash"></i>
-              </button>
-              <a href="{% url 'staff:employe_detail' employe.pk %}" class="text-success" title="Voir"><i class="icon cil-folder-open"></i></a>
-              <a href="{% url 'staff:employe_update' employe.pk %}" class="text-warning" title="Modifier"><i class="icon cil-pencil"></i></a>
-              <i class="icon cil-trash text-danger action-icon" title="Supprimer" onclick="confirmDelete({{ employe.id }})"></i>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
-              <i class="fa fa-users fa-3x mb-3 opacity-25"></i>
-              <p>Aucun employé trouvé</p>
-              <a href="{% url 'staff:employe_create' %}" class="btn btn-primary btn-sm">
-                <i class="fa fa-plus"></i> Ajouter le premier
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  {% if is_paginated %}
-    <nav class="mt-4">
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-3">
       <ul class="pagination pagination-sm justify-content-center">
         {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">«</a></li>
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">‹</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if selected_departement %}&departement={{ selected_departement }}{% endif %}">«</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_departement %}&departement={{ selected_departement }}{% endif %}">‹</a>
+          </li>
         {% endif %}
 
-        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        <li class="page-item disabled">
+          <span class="page-link">
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+        </li>
 
         {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">›</a></li>
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.departement %}&departement={{ request.GET.departement }}{% endif %}">»</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_departement %}&departement={{ selected_departement }}{% endif %}">›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if selected_departement %}&departement={{ selected_departement }}{% endif %}">»</a>
+          </li>
         {% endif %}
       </ul>
     </nav>
-  {% endif %}
+    {% endif %}
+    <!-- Modal Bootstrap pour Create/Update -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-labelledby="entityModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+      </div>
+    </div>
+  </div>
 </div>
+
+{% csrf_token %}
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const attachDeleteListeners = () => {
+        const deleteButtons = document.querySelectorAll(".delete-btn");
+        
+        deleteButtons.forEach(btn => {
+            // Supprimer les anciens listeners pour éviter les doublons
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const url = newBtn.dataset.url;
+                const nom = newBtn.dataset.name || newBtn.closest("tr").querySelector("td:nth-child(2) .fw-medium").innerText;
+                
+                Swal.fire({
+                    title: `Supprimer ${nom} ?`,
+                    text: "Cette action est irréversible !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                    reverseButtons: true
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        // Afficher loader
+                        Swal.fire({
+                            title: 'Suppression en cours...',
+                            html: 'Veuillez patienter',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                            },
+                        })
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if(data.form_is_valid || data.success){
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Supprimé !",
+                                    text: "L'employé a été supprimé avec succès.",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // TOUJOURS recharger la page pour garantir la mise à jour
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire("Erreur !", "Impossible de supprimer.", "error");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Erreur:", error);
+                            Swal.fire("Erreur !", "Une erreur est survenue.", "error");
+                        });
+                    }
+                });
+            });
+        });
+    };
+    
+    // Attacher les listeners au chargement initial
+    attachDeleteListeners();
+    
+    // ========================================
+    // INTERCEPTER LES RÉPONSES AJAX RÉUSSIES
+    // ========================================
+    // Variable pour tracker si une opération a réussi
+    let operationReussie = false;
+    
+    $(document).ajaxComplete(function(event, xhr, settings) {
+        try {
+            const response = JSON.parse(xhr.responseText);
+            
+            // Si l'opération a réussi (création ou modification)
+            if (response.form_is_valid === true && response.html_content_list) {
+                console.log("=== Opération réussie détectée ===");
+                operationReussie = true;
+                
+                // Mettre à jour le tableau
+                $('#entity-table tbody').html(response.html_content_list);
+                
+                // Réattacher les listeners de suppression
+                attachDeleteListeners();
+                
+                // Afficher un message de succès
+                if (settings.url.includes('/add/')) {
+                    console.log("=== Employé créé avec succès ===");
+                } else if (settings.url.includes('/update/')) {
+                    console.log("=== Employé modifié avec succès ===");
+                }
+            }
+        } catch (e) {
+            // Pas une réponse JSON, ignorer
+        }
+    });
+    
+    // Recharger la page quand la modale se ferme APRÈS une opération réussie
+    $('#modal-entity').on('hidden.bs.modal', function (e) {
+        if (operationReussie) {
+            console.log("=== Rechargement après opération réussie ===");
+            location.reload();
+        }
+    });
+    
+    // ========================================
+    // DÉBOGAGE (TEMPORAIRE)
+    // ========================================
+    console.log("=== Script chargé ===");
+    console.log("jQuery disponible?", typeof $ !== 'undefined');
+    console.log("entity-manager.js chargé?", typeof Helpers !== 'undefined');
+    
+    // Intercepter les clics sur créer
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.js-create-entity')) {
+            console.log("=== Bouton CRÉER cliqué ===");
+            console.log("URL:", e.target.closest('.js-create-entity').dataset.url);
+        }
+    });
+    
+    // Si jQuery est disponible, intercepter les réponses AJAX
+    if (typeof $ !== 'undefined') {
+        $(document).ajaxComplete(function(event, xhr, settings) {
+            console.log("=== Réponse AJAX ===");
+            console.log("URL:", settings.url);
+            console.log("Status:", xhr.status);
+            
+            try {
+                const response = JSON.parse(xhr.responseText);
+                console.log("Response JSON:", response);
+                
+                if (response.form_is_valid === false) {
+                    console.log("❌ FORMULAIRE INVALIDE - Erreurs détectées");
+                    console.log("HTML du formulaire avec erreurs:", response.html_form ? "présent" : "absent");
+                } else if (response.form_is_valid === true) {
+                    console.log("✅ FORMULAIRE VALIDE - Succès!");
+                    console.log("Contenu liste:", response.html_content_list ? "présent" : "absent");
+                }
+                
+                if (response.html_form) {
+                    console.log("Longueur html_form:", response.html_form.length);
+                }
+            } catch (e) {
+                console.log("Réponse non-JSON:", xhr.responseText.substring(0, 200));
+            }
+        });
+        
+        // Intercepter la soumission du formulaire
+        $(document).on('submit', '.js-entity-create-form', function(e) {
+            console.log("=== FORMULAIRE CREATE SOUMIS ===");
+            console.log("Action:", $(this).attr('action'));
+            console.log("Method:", $(this).attr('method'));
+            
+            const formData = new FormData(this);
+            console.log("=== DONNÉES DU FORMULAIRE ===");
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ':', pair[1]);
+            }
+        });
+    }
+});
+</script>
+
 {% endblock content %}
-
-

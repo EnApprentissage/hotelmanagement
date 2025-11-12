@@ -1,4 +1,5 @@
 # staff/forms.py
+import re
 from django import forms
 from .models import Employe, Planning, Pointage, Conge, Evaluation, Incident
 
@@ -58,12 +59,37 @@ class EmployeForm(forms.ModelForm):
         }
 
     # Exemple de validation personnalisée
-    def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-        if phone and not phone.isdigit():
-            raise forms.ValidationError("Le numéro de téléphone doit contenir uniquement des chiffres.")
-        return phone
+def clean_phone(self):
+        """Nettoyer et valider le numéro de téléphone"""
+        phone = self.cleaned_data.get('phone', '')
+        
+        # Supprimer tous les caractères non numériques sauf le +
+        phone_digits = re.sub(r'[^\d+]', '', phone)
+        
+        # Vérifier qu'il reste au moins 8 chiffres
+        digits_only = re.sub(r'[^\d]', '', phone_digits)
+        if len(digits_only) < 8:
+            raise forms.ValidationError("Le numéro de téléphone doit contenir au moins 8 chiffres.")
+        
+        # Retourner le numéro nettoyé
+        return phone_digits
 
+def clean_contact_urgence_phone(self):
+        """Nettoyer et valider le numéro de téléphone d'urgence"""
+        phone = self.cleaned_data.get('contact_urgence_phone', '')
+        
+        if phone:  # Seulement si le champ est rempli
+            # Supprimer tous les caractères non numériques sauf le +
+            phone_digits = re.sub(r'[^\d+]', '', phone)
+            
+            # Vérifier qu'il reste au moins 8 chiffres
+            digits_only = re.sub(r'[^\d]', '', phone_digits)
+            if len(digits_only) < 8:
+                raise forms.ValidationError("Le numéro de téléphone doit contenir au moins 8 chiffres.")
+            
+            return phone_digits
+        
+        return phone
 # ============================
 # Formulaire Planning
 # ============================

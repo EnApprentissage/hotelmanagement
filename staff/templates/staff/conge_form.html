@@ -1,0 +1,42 @@
+<form method="post" class="js-entity-form">
+  {% csrf_token %}
+  <div class="modal-header">
+    <h5 class="modal-title">
+      {% if form.instance.pk %}Modifier le congé{% else %}Ajouter un congé{% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3">
+      <label class="form-label">Employé</label>
+      {{ form.employe|add_class:"form-select" }}
+      {{ form.employe.errors }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Type</label>
+      {{ form.type_conge|add_class:"form-select" }}
+      {{ form.type_conge.errors }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Date début</label>
+      {{ form.date_debut|add_class:"form-control" }}
+      {{ form.date_debut.errors }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Date fin</label>
+      {{ form.date_fin|add_class:"form-control" }}
+      {{ form.date_fin.errors }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Motif</label>
+      {{ form.motif|add_class:"form-control" }}
+      {{ form.motif.errors }}
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+    <button type="submit" class="btn btn-primary">
+      {% if form.instance.pk %}Enregistrer{% else %}Ajouter{% endif %}
+    </button>
+  </div>
+</form>

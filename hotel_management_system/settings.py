@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'parametrage',
     'rapports',
     'django_filters',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

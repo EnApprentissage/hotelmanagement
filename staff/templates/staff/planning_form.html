@@ -1,130 +1,70 @@
-{% extends 'layouts/base.html' %}
-{% load static %}
+{% load i18n widget_tweaks %}
 
-{% block title %}
-  {% if form.instance.pk %}Modifier{% else %}Créer{% endif %} un Planning
-{% endblock %}
+<form method="post" 
+      action="{% if form.instance.pk %}{% url 'staff:planning_update' form.instance.pk %}{% else %}{% url 'staff:planning_create' %}{% endif %}"
+      class="js-entity-form {% if form.instance.pk %}js-entity-update-form{% else %}js-entity-create-form{% endif %}"
+      novalidate>
+  {% csrf_token %}
 
-{% block content %}
-<div class="wrapper d-flex flex-column min-vh-100">
-  <header class="header header-sticky p-0 mb-4">
-    {% include 'includes/navbar.html' %}
-    <div class="container-fluid px-4"></div>
-  </header>
-<div class="container-fluid px-4 py-3">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white">
-          <h5 class="mb-0">
-            <i class="fa fa-calendar-plus text-primary me-2"></i>
-            {% if form.instance.pk %}Modifier le planning{% else %}Nouveau planning{% endif %}
-          </h5>
-        </div>
-        <div class="card-body">
-          <form method="post" class="needs-validation" novalidate>
-            {% csrf_token %}
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      {% if form.instance.pk %}
+        {% trans "Modifier le planning" %}
+      {% else %}
+        {% trans "Ajouter un planning" %}
+      {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  </div>
 
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Employé <span class="text-danger">*</span></label>
-                <select name="employe" class="form-select {% if form.employe.errors %}is-invalid{% endif %}" required>
-                  <option value="">Sélectionner...</option>
-                  {% for emp in employes %}
-                    <option value="{{ emp.id }}" {% if form.employe.value == emp.id %}selected{% endif %}>
-                      {{ emp.prenom }} {{ emp.nom }} ({{ emp.poste|default:"—" }})
-                    </option>
-                  {% endfor %}
-                </select>
-                {% for error in form.employe.errors %}
-                  <div class="invalid-feedback">{{ error }}</div>
-                {% endfor %}
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Date <span class="text-danger">*</span></label>
-                <input type="date" name="date" class="form-control {% if form.date.errors %}is-invalid{% endif %}" 
-                       value="{{ form.date.value|date:'Y-m-d' }}" required>
-                {% for error in form.date.errors %}
-                  <div class="invalid-feedback">{{ error }}</div>
-                {% endfor %}
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Période <span class="text-danger">*</span></label>
-                <select name="periode" class="form-select {% if form.periode.errors %}is-invalid{% endif %}" required>
-                  <option value="">Choisir...</option>
-                  <option value="jour" {% if form.periode.value == 'jour' %}selected{% endif %}>Jour (06h-14h)</option>
-                  <option value="soir" {% if form.periode.value == 'soir' %}selected{% endif %}>Soir (14h-22h)</option>
-                  <option value="nuit" {% if form.periode.value == 'nuit' %}selected{% endif %}>Nuit (22h-06h)</option>
-                </select>
-                {% for error in form.periode.errors %}
-                  <div class="invalid-feedback">{{ error }}</div>
-                {% endfor %}
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Heure début <span class="text-danger">*</span></label>
-                <input type="time" name="heure_debut" class="form-control {% if form.heure_debut.errors %}is-invalid{% endif %}" 
-                       value="{{ form.heure_debut.value|time:'H:i' }}" required>
-                {% for error in form.heure_debut.errors %}
-                  <div class="invalid-feedback">{{ error }}</div>
-                {% endfor %}
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Heure fin <span class="text-danger">*</span></label>
-                <input type="time" name="heure_fin" class="form-control {% if form.heure_fin.errors %}is-invalid{% endif %}" 
-                       value="{{ form.heure_fin.value|time:'H:i' }}" required>
-                {% for error in form.heure_fin.errors %}
-                  <div class="invalid-feedback">{{ error }}</div>
-                {% endfor %}
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Poste assigné</label>
-                <input type="text" name="poste_assigne" class="form-control" 
-                       value="{{ form.poste_assigne.value }}" placeholder="Ex: Caissier, Agent de sécurité...">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Notes</label>
-                <textarea name="notes" class="form-control" rows="2" placeholder="Informations supplémentaires...">{{ form.notes.value }}</textarea>
-              </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-primary">
-                <i class="fa fa-save"></i> 
-                {% if form.instance.pk %}Mettre à jour{% else %}Créer{% endif %}
-              </button>
-              <a href="{% url 'staff:planning_list' %}" class="btn btn-secondary">
-                <i class="fa fa-arrow-left"></i> Retour
-              </a>
-            </div>
-          </form>
-        </div>
+  <div class="modal-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">{% trans "Employé" %} <span class="text-danger">*</span></label>
+        {{ form.employe|add_class:"form-select" }}
+        {{ form.employe.errors }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{% trans "Date" %} <span class="text-danger">*</span></label>
+        {{ form.date|add_class:"form-control" }}
+        {{ form.date.errors }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{% trans "Période" %} <span class="text-danger">*</span></label>
+        {{ form.periode|add_class:"form-select" }}
+        {{ form.periode.errors }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{% trans "Heure début" %} <span class="text-danger">*</span></label>
+        {{ form.heure_debut|add_class:"form-control" }}
+        {{ form.heure_debut.errors }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{% trans "Heure fin" %} <span class="text-danger">*</span></label>
+        {{ form.heure_fin|add_class:"form-control" }}
+        {{ form.heure_fin.errors }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{% trans "Poste assigné" %}</label>
+        {{ form.poste_assigne|add_class:"form-control" }}
+        {{ form.poste_assigne.errors }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{% trans "Notes" %}</label>
+        {{ form.notes|add_class:"form-control" }}
+        {{ form.notes.errors }}
       </div>
     </div>
   </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-  // Validation Bootstrap
-  (function () {
-    'use strict'
-    var forms = document.querySelectorAll('.needs-validation')
-    Array.prototype.slice.call(forms).forEach(function (form) {
-      form.addEventListener('submit', function (event) {
-        if (!form.checkValidity()) {
-          event.preventDefault()
-          event.stopPropagation()
-        }
-        form.classList.add('was-validated')
-      }, false)
-    })
-  })()
-</script>
-{% endblock %}
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Annuler" %}</button>
+    <button type="submit" class="btn btn-primary">
+      {% if form.instance.pk %}
+        {% trans "Enregistrer" %}
+      {% else %}
+        {% trans "Ajouter" %}
+      {% endif %}
+    </button>
+  </div>
+</form>

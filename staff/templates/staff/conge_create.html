@@ -1,0 +1,82 @@
+{% load static i18n widget_tweaks %}
+
+<form method="post" class="js-entity-form" novalidate>
+  {% csrf_token %}
+
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      {% if form.instance.pk %}
+        Modifier le congé
+      {% else %}
+        Ajouter un congé
+      {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="row g-3">
+      
+      <!-- Employé -->
+      <div class="col-md-6">
+        <label class="form-label">Employé <span class="text-danger">*</span></label>
+        {{ form.employe|add_class:"form-select" }}
+        {{ form.employe.errors }}
+      </div>
+
+      <!-- Type de congé -->
+      <div class="col-md-6">
+        <label class="form-label">Type de congé <span class="text-danger">*</span></label>
+        {{ form.type_conge|add_class:"form-select" }}
+        {{ form.type_conge.errors }}
+      </div>
+
+      <!-- Date début -->
+      <div class="col-md-6">
+        <label class="form-label">Date début <span class="text-danger">*</span></label>
+        {{ form.date_debut|add_class:"form-control" }}
+        {{ form.date_debut.errors }}
+      </div>
+
+      <!-- Date fin -->
+      <div class="col-md-6">
+        <label class="form-label">Date fin <span class="text-danger">*</span></label>
+        {{ form.date_fin|add_class:"form-control" }}
+        {{ form.date_fin.errors }}
+      </div>
+
+      <!-- Nombre de jours -->
+      <div class="col-md-6">
+        <label class="form-label">Nombre de jours <span class="text-danger">*</span></label>
+        {{ form.nombre_jours|add_class:"form-control" }}
+        {{ form.nombre_jours.errors }}
+      </div>
+
+      <!-- Motif -->
+      <div class="col-md-6">
+        <label class="form-label">Motif</label>
+        {{ form.motif|add_class:"form-control" }}
+        {{ form.motif.errors }}
+      </div>
+
+      <!-- Statut -->
+      <div class="col-md-6">
+        <label class="form-label">Statut</label>
+        {{ form.statut|add_class:"form-select" }}
+        {{ form.statut.errors }}
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+    <button type="submit" class="btn btn-primary">
+      {% if form.instance.pk %}
+        <i class="fas fa-save"></i> Enregistrer
+      {% else %}
+        <i class="fas fa-plus"></i> Ajouter
+      {% endif %}
+    </button>
+  </div>
+</form>

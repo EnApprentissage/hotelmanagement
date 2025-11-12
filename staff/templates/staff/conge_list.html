@@ -1,0 +1,202 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n widget_tweaks %}
+
+{% block title %}Gestion des Congés{% endblock %}
+
+{% block extra_css %}
+<style>
+  .badge-status {
+    font-size: 0.75rem;
+    padding: 0.25em 0.5em;
+  }
+  .table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4"></div>
+  </header>
+
+  <div class="container-fluid px-4 py-3">
+
+    <!-- Header + bouton créer -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0"><i class="fa fa-calendar-alt me-2 text-primary"></i> Congés et absences</h5>
+      <button type="button" class="btn btn-primary btn-sm js-create-entity"
+              data-url="{% url 'staff:conge_create' %}">
+        <i class="fa fa-plus"></i> Ajouter un congé
+      </button>
+    </div>
+
+    <!-- Filtres -->
+    <form method="get" class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <input type="date" name="date_debut" class="form-control form-control-sm"
+                 value="{{ request.GET.date_debut }}">
+        </div>
+        <div class="col-md-3">
+          <input type="date" name="date_fin" class="form-control form-control-sm"
+                 value="{{ request.GET.date_fin }}">
+        </div>
+        <div class="col-md-3">
+          <select name="employe" class="form-select form-select-sm">
+            <option value="">Tous les employés</option>
+            {% for emp in employes %}
+              <option value="{{ emp.id }}" {% if request.GET.employe == emp.id|stringformat:"s" %}selected{% endif %}>
+                {{ emp.prenom }} {{ emp.nom }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+            <i class="fa fa-filter"></i> Filtrer
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Tableau des congés -->
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Date demande</th>
+            <th>Employé</th>
+            <th>Type</th>
+            <th>Durée</th>
+            <th>Jours</th>
+            <th>Motif</th>
+            <th>Statut</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for conge in conges %}
+            <tr>
+              <td class="text-nowrap">{{ conge.date_demande|date:"d/m/Y" }}</td>
+              <td>{{ conge.employe.prenom }} {{ conge.employe.nom }}</td>
+              <td>{{ conge.type_conge|capfirst }}</td>
+              <td class="text-nowrap">{{ conge.date_debut|date:"d/m/Y" }} - {{ conge.date_fin|date:"d/m/Y" }}</td>
+              <td>{{ conge.nombre_jours }}</td>
+              <td>{{ conge.motif|truncatewords:10|default:"—" }}</td>
+              <td>
+                {% if conge.statut == 'en_attente' %}
+                  <span class="badge bg-warning badge-status">En attente</span>
+                {% elif conge.statut == 'approuve' %}
+                  <span class="badge bg-success badge-status">Approuvé</span>
+                {% else %}
+                  <span class="badge bg-danger badge-status">Refusé</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <button type="button" class="btn btn-sm text-warning js-update-entity me-2"
+                        data-url="{% url 'staff:conge_update' conge.pk %}">
+                  <i class="icon cil-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-sm text-danger js-delete-entity"
+                        data-url="{% url 'staff:conge_delete' conge.pk %}"
+                        data-name="{{ conge.employe.prenom }} {{ conge.employe.nom }} - {{ conge.date_debut|date:'d/m/Y' }}">
+                  <i class="icon cil-trash"></i>
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="fa fa-calendar-times fa-2x mb-2 opacity-25"></i><br>
+                Aucun congé trouvé
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+      <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">«</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">»</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Modal Bootstrap pour créer/éditer -->
+<div class="modal fade" id="modal-entity" tabindex="-1" aria-labelledby="entityModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content"></div>
+  </div>
+</div>
+
+{% csrf_token %}
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Suppression
+    const attachDeleteListeners = () => {
+        const deleteButtons = document.querySelectorAll(".js-delete-entity");
+        deleteButtons.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const url = btn.dataset.url;
+                const name = btn.dataset.name;
+                Swal.fire({
+                    title: `Supprimer le congé de ${name} ?`,
+                    text: "Cette action est irréversible !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Oui, supprimer",
+                    cancelButtonText: "Annuler",
+                    reverseButtons: true
+                }).then(result => {
+                    if(result.isConfirmed){
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            },
+                        })
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if(data.success){
+                                Swal.fire("Supprimé !", "Le congé a été supprimé.", "success")
+                                .then(() => location.reload());
+                            } else {
+                                Swal.fire("Erreur !", "Impossible de supprimer ce congé.", "error");
+                            }
+                        })
+                        .catch(() => Swal.fire("Erreur !", "Une erreur est survenue.", "error"));
+                    }
+                });
+            });
+        });
+    };
+    attachDeleteListeners();
+});
+</script>
+{% endblock content %}

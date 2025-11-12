@@ -1,62 +1,117 @@
+from decimal import Decimal
+from django.utils import timezone # CORRECT
+# OU : from django.utils.timezone import now
+from time import timezone
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+from accounts.models import User
 from parametrage.reference_generator import ReferenceGenerator
+from django.conf import settings
+
 
 class Employe(models.Model):
     """Informations détaillées des employés"""
     ETAT_CIVIL_CHOICES = [
-        ('celibataire', 'Célibataire'),
-        ('marie', 'Marié(e)'),
-        ('divorce', 'Divorcé(e)'),
-        ('veuf', 'Veuf/Veuve'),
+        ('celibataire', _('Célibataire')),
+        ('marie', _('Marié(e)')),
+        ('divorce', _('Divorcé(e)')),
+        ('veuf', _('Veuf/Veuve')),
     ]
-    
-    user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name='employe')
-    nom = models.CharField(max_length=100)
-    prenom = models.CharField(max_length=100)
-    date_naissance = models.DateField(null=True, blank=True)
-    lieu_naissance = models.CharField(max_length=100, blank=True)
-    nationalite = models.CharField(max_length=50)
-    etat_civil = models.CharField(max_length=20, choices=ETAT_CIVIL_CHOICES)
-    matricule = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    
-    adresse = models.TextField()
-    ville = models.CharField(max_length=100)
-    pays = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20)
-    email = models.EmailField()
-    
-    poste = models.CharField(max_length=100)
-    departement = models.CharField(max_length=100)
-    date_embauche = models.DateField(null=True, blank=True)
-    salaire = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
-    cv = models.FileField(upload_to='cv_employes/', blank=True, null=True)
-    contrat = models.FileField(upload_to='contrats/', blank=True, null=True)
-    photo = models.ImageField(upload_to='photos_employes/', blank=True, null=True)
-    
-    contact_urgence_nom = models.CharField(max_length=100, blank=True)
-    contact_urgence_phone = models.CharField(max_length=20, blank=True)
-    contact_urgence_relation = models.CharField(max_length=50, blank=True)
-    
-    date_creation = models.DateTimeField(auto_now_add=True)
-    date_modification = models.DateTimeField(auto_now=True)
-    
+
+    # === RELATION & IDENTITÉ ===
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='employes',
+        verbose_name=_("Créé par")
+    )
+    nom = models.CharField(_("Nom"), max_length=100)
+    prenom = models.CharField(_("Prénom"), max_length=100)
+    date_naissance = models.DateField(_("Date de naissance"), null=True, blank=True)
+    lieu_naissance = models.CharField(_("Lieu de naissance"), max_length=100, blank=True)
+    nationalite = models.CharField(_("Nationalité"), max_length=50, default="Marocaine")
+    etat_civil = models.CharField(_("État civil"), max_length=20, choices=ETAT_CIVIL_CHOICES, default='celibataire')
+    matricule = models.CharField(
+        _("Matricule"),
+        max_length=50,
+        unique=True,
+        blank=True,
+        null=True
+    )
+
+    # === CONTACT ===
+    adresse = models.TextField(_("Adresse"))
+    ville = models.CharField(_("Ville"), max_length=100)
+    pays = models.CharField(_("Pays"), max_length=100, default="Maroc")
+    phone = models.CharField(_("Téléphone"), max_length=20)
+    email = models.EmailField(_("Email"))
+
+    # === TRAVAIL ===
+    poste = models.CharField(_("Poste"), max_length=100)
+    departement = models.CharField(_("Département"), max_length=100)
+    date_embauche = models.DateField(_("Date d'embauche"), null=True, blank=True)
+    salaire = models.DecimalField(
+        _("Salaire"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    # === DOCUMENTS & MÉDIAS ===
+    cv = models.FileField(upload_to='cv_employes/', blank=True, null=True, verbose_name=_("CV"))
+    contrat = models.FileField(upload_to='contrats/', blank=True, null=True, verbose_name=_("Contrat"))
+    photo = models.ImageField(
+        upload_to='photos_employes/',
+        blank=True,
+        null=True,
+        verbose_name=_("Photo")
+    )
+
+    # === POINTAGE PAR CARTE ===
+    carte_id = models.CharField(
+        _("ID Carte (RFID/NFC)"),
+        max_length=50,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text=_("Scannez la carte pour associer cet ID")
+    )
+
+    # === URGENCE ===
+    contact_urgence_nom = models.CharField(_("Nom contact urgence"), max_length=100, blank=True)
+    contact_urgence_phone = models.CharField(_("Téléphone urgence"), max_length=20, blank=True)
+    contact_urgence_relation = models.CharField(_("Relation"), max_length=50, blank=True)
+
+    # === AUDIT ===
+    date_creation = models.DateTimeField(auto_now_add=True, verbose_name=_("Créé le"))
+    date_modification = models.DateTimeField(auto_now=True, verbose_name=_("Modifié le"))
+
     class Meta:
         db_table = 'employes'
         verbose_name = 'Employé'
         verbose_name_plural = 'Employés'
-    
+        ordering = ['-date_embauche', 'nom']
+
     def __str__(self):
         return f"{self.prenom} {self.nom} - {self.poste}"
-    
+
+    def get_full_name(self):
+        return f"{self.prenom} {self.nom}"
+
+    def get_photo_url(self):
+        if self.photo:
+            return self.photo.url
+        return f"{settings.STATIC_URL}img/default-avatar.png"  # À configurer
+
+    # === GÉNÉRATION AUTOMATIQUE DU MATRICULE ===
     def save(self, *args, **kwargs):
-        # Génération automatique du matricule si vide
         if not self.matricule:
             self.matricule = ReferenceGenerator.generate_reference(
-                model_class=Employe,     # Modèle concerné
-                field_name='matricule',  # Champ de référence
-                prefix='EMP',            # Préfixe du matricule
-                nombre=4                 # Longueur du numéro (0001)
+                model_class=Employe,
+                field_name='matricule',
+                prefix='EMP',
+                nombre=4
             )
         super().save(*args, **kwargs)
 
@@ -81,20 +136,66 @@ class Planning(models.Model):
         unique_together = ['employe', 'date', 'periode']
         ordering = ['date', 'heure_debut']
 
+
+
+from django.db import models
+from django.utils import timezone  # CORRECT
+# OU : from django.utils.timezone import now
+from decimal import Decimal
+
 class Pointage(models.Model):
-    """Enregistrement des pointages"""
-    employe = models.ForeignKey(Employe, on_delete=models.CASCADE, related_name='pointages')
-    date = models.DateField()
-    heure_arrivee = models.TimeField()
-    heure_depart = models.TimeField(null=True, blank=True)
-    retard_minutes = models.IntegerField(default=0)
-    heures_travaillees = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    notes = models.TextField(blank=True)
-    
+    employe = models.ForeignKey(
+        'Employe',
+        on_delete=models.CASCADE,
+        related_name='pointages',
+        verbose_name="Employé"
+    )
+    date = models.DateField(
+        _("Date"),
+        default=timezone.now  # FONCTION, PAS APPELÉE ICI
+        # Si tu veux la date sans heure : default=timezone.now.date
+    )
+    heure_arrivee = models.TimeField(_("Heure d'arrivée"))
+    heure_depart = models.TimeField(_("Heure de départ"), null=True, blank=True)
+    retard_minutes = models.IntegerField(_("Retard (min)"), default=0)
+    heures_travaillees = models.DecimalField(
+        _("Heures travaillées"),
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    notes = models.TextField(_("Notes"), blank=True)
+
     class Meta:
         db_table = 'pointages'
         unique_together = ['employe', 'date']
-        ordering = ['-date']
+        ordering = ['-date', '-heure_arrivee']
+        verbose_name = 'Pointage'
+        verbose_name_plural = 'Pointages'
+
+    def __str__(self):
+        return f"{self.employe} - {self.date}"
+
+    def calculer_retard(self):
+        heure_standard = timezone.datetime.strptime("08:00", "%H:%M").time()
+        if self.heure_arrivee and self.heure_arrivee > heure_standard:
+            delta = timezone.datetime.combine(timezone.now().date(), self.heure_arrivee) - \
+                    timezone.datetime.combine(timezone.now().date(), heure_standard)
+            self.retard_minutes = delta.seconds // 60
+        else:
+            self.retard_minutes = 0
+        self.save(update_fields=['retard_minutes'])
+
+    def calculer_heures_travaillees(self):
+        if self.heure_arrivee and self.heure_depart:
+            delta = timezone.datetime.combine(timezone.now().date(), self.heure_depart) - \
+                    timezone.datetime.combine(timezone.now().date(), self.heure_arrivee)
+            heures = Decimal(delta.seconds) / 3600
+            self.heures_travaillees = round(heures, 2)
+        else:
+            self.heures_travaillees = None
+        self.save(update_fields=['heures_travaillees'])
 
 class Conge(models.Model):
     """Gestion des congés et absences"""

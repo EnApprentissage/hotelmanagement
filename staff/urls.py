@@ -1,5 +1,10 @@
 from django.urls import path
 from .views import (
+    CongeDeleteView,
+    CongeListView,
+    CongeCreateView,
+    CongeUpdateView,
+    
     EmployeListView,
     EmployeDetailView,
     EmployeCreateView,
@@ -25,4 +30,10 @@ urlpatterns = [
     path('planning/create/', PlanningCreateView.as_view(), name='planning_create'),
     path('planning/<int:pk>/update/', PlanningUpdateView.as_view(), name='planning_update'),
     path('planning/<int:pk>/delete/', PlanningDeleteView.as_view(), name='planning_delete'),
+
+    # Congé URLs
+    path('conges/', CongeListView.as_view(), name='conge_list'),
+    path('conges/add/', CongeCreateView.as_view(), name='conge_create'),
+    path('conges/<int:pk>/edit/', CongeUpdateView.as_view(), name='conge_update'),
+    path('conges/<int:pk>/delete/', CongeDeleteView.as_view(), name='conge_delete'),
 ]

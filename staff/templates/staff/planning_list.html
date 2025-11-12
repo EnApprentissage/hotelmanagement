@@ -1,5 +1,5 @@
 {% extends 'layouts/base.html' %}
-{% load static %}
+{% load static i18n widget_tweaks %}
 
 {% block title %}Planning du Personnel{% endblock %}
 
@@ -19,150 +19,295 @@
     font-size: 1.1rem;
   }
 </style>
-{% endblock %}
+{% endblock extra_css %}
+
 
 {% block content %}
-<div class="container-fluid px-4 py-3">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="mb-0">
-      <i class="fa fa-calendar-alt me-2 text-primary"></i> Planning du Personnel
-    </h5>
-    <a href="{% url 'staff:planning_create' %}" class="btn btn-primary btn-sm">
-      <i class="fa fa-plus"></i> Ajouter un planning
-    </a>
-  </div>
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+  </header>
 
-  <!-- Filtres -->
-  <form method="get" class="mb-4">
-    <div class="row g-3">
-      <div class="col-md-3">
-        <input type="date" name="date_debut" class="form-control form-control-sm" value="{{ request.GET.date_debut }}">
+  <div class="container-fluid px-4 py-3">
+
+    <!-- Header + Bouton créer -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0">
+        <i class="fa fa-calendar-alt me-2 text-primary"></i> Planning du Personnel
+      </h5>
+      <button type="button" class="btn btn-primary btn-sm js-create-entity"
+              data-url="{% url 'staff:planning_create' %}">
+        <i class="fa fa-plus"></i> Ajouter un planning
+      </button>
+    </div>
+
+    <!-- 🔍 Filtres -->
+    <form method="get" class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <input type="date" name="date_debut" class="form-control form-control-sm"
+                 value="{{ request.GET.date_debut }}">
+        </div>
+        <div class="col-md-3">
+          <input type="date" name="date_fin" class="form-control form-control-sm"
+                 value="{{ request.GET.date_fin }}">
+        </div>
+        <div class="col-md-3">
+          <select name="employe" class="form-select form-select-sm">
+            <option value="">Tous les employés</option>
+            {% for emp in employes %}
+              <option value="{{ emp.id }}"
+                      {% if request.GET.employe == emp.id|stringformat:"s" %}selected{% endif %}>
+                {{ emp.prenom }} {{ emp.nom }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+            <i class="fa fa-filter"></i> Filtrer
+          </button>
+        </div>
       </div>
-      <div class="col-md-3">
-        <input type="date" name="date_fin" class="form-control form-control-sm" value="{{ request.GET.date_fin }}">
+    </form>
+
+
+    <!-- 📋 Tableau des plannings -->
+    <div class="card">
+      <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+        <i class="cil-list me-2"></i>
+        <h6 class="mb-0">Liste des plannings des employés</h6>
       </div>
-      <div class="col-md-3">
-        <select name="employe" class="form-select form-select-sm">
-          <option value="">Tous les employés</option>
-          {% for emp in employes %}
-            <option value="{{ emp.id }}" {% if request.GET.employe == emp.id|stringformat:"s" %}selected{% endif %}>
-              {{ emp.prenom }} {{ emp.nom }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
-          <i class="fa fa-filter"></i> Filtrer
-        </button>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle" id="planning-table">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Employé</th>
+                <th>Période</th>
+                <th>Heures</th>
+                <th>Poste assigné</th>
+                <th>Notes</th>
+                <th class="text-center" width="100">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="planning-list-body">
+              {% for planning in plannings %}
+                <tr>
+                  <td class="text-nowrap">{{ planning.date|date:"d/m/Y" }}</td>
+                  <td>
+                    <div class="fw-medium">{{ planning.employe.prenom }} {{ planning.employe.nom }}</div>
+                    <small class="text-muted">#{{ planning.employe.id }}</small>
+                  </td>
+                  <td>
+                    {% if planning.periode == 'jour' %}
+                      <span class="badge bg-success planning-badge">Jour</span>
+                    {% elif planning.periode == 'soir' %}
+                      <span class="badge bg-warning planning-badge">Soir</span>
+                    {% else %}
+                      <span class="badge bg-dark planning-badge">Nuit</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-nowrap small">
+                    {{ planning.heure_debut|time:"H\\hi" }} - {{ planning.heure_fin|time:"H\\hi" }}
+                  </td>
+                  <td>
+                    {% if planning.poste_assigne %}
+                      <span class="text-info small">{{ planning.poste_assigne|truncatechars:15 }}</span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {% if planning.notes %}
+                        {{ planning.notes|truncatewords:8 }}
+                      {% else %}—{% endif %}
+                    </small>
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm text-warning js-update-entity me-2"
+                            data-url="{% url 'staff:planning_update' planning.pk %}">
+                      <i class="icon cil-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm text-danger delete-planning-btn"
+                            data-url="{% url 'staff:planning_delete' planning.pk %}"
+                            data-name="{{ planning.employe.prenom }} {{ planning.employe.nom }} - {{ planning.date|date:'d/m/Y' }}">
+                      <i class="icon cil-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                    <p>Aucun planning trouvé</p>
+                    <button type="button" class="btn btn-primary btn-sm js-create-entity"
+                            data-url="{% url 'staff:planning_create' %}">
+                      <i class="fa fa-plus"></i> Créer le premier
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 📄 Pagination -->
+        {% if is_paginated %}
+          <nav class="mt-4">
+            <ul class="pagination pagination-sm justify-content-center">
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?{% if request.GET.date_debut %}date_debut={{request.GET.date_debut}}&{% endif %}
+                                             {% if request.GET.date_fin %}date_fin={{request.GET.date_fin}}&{% endif %}
+                                             {% if request.GET.employe %}employe={{request.GET.employe}}&{% endif %}
+                                             page=1">«</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="?{% if request.GET.date_debut %}date_debut={{request.GET.date_debut}}&{% endif %}
+                                             {% if request.GET.date_fin %}date_fin={{request.GET.date_fin}}&{% endif %}
+                                             {% if request.GET.employe %}employe={{request.GET.employe}}&{% endif %}
+                                             page={{ page_obj.previous_page_number }}">‹</a>
+                </li>
+              {% endif %}
+              <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+              </li>
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?{% if request.GET.date_debut %}date_debut={{request.GET.date_debut}}&{% endif %}
+                                             {% if request.GET.date_fin %}date_fin={{request.GET.date_fin}}&{% endif %}
+                                             {% if request.GET.employe %}employe={{request.GET.employe}}&{% endif %}
+                                             page={{ page_obj.next_page_number }}">›</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="?{% if request.GET.date_debut %}date_debut={{request.GET.date_debut}}&{% endif %}
+                                             {% if request.GET.date_fin %}date_fin={{request.GET.date_fin}}&{% endif %}
+                                             {% if request.GET.employe %}employe={{request.GET.employe}}&{% endif %}
+                                             page={{ page_obj.paginator.num_pages }}">»</a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        {% endif %}
       </div>
     </div>
-  </form>
-
-  <!-- Tableau des plannings -->
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Date</th>
-          <th>Employé</th>
-          <th>Période</th>
-          <th>Heures</th>
-          <th>Poste assigné</th>
-          <th>Notes</th>
-          <th class="text-center" width="100">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for planning in plannings %}
-          <tr>
-            <td class="text-nowrap">{{ planning.date|date:"d/m/Y" }}</td>
-            <td>
-              <div class="fw-medium">{{ planning.employe.prenom }} {{ planning.employe.nom }}</div>
-              <small class="text-muted">#{{ planning.employe.id }}</small>
-            </td>
-            <td>
-              {% if planning.periode == 'jour' %}
-                <span class="badge bg-success planning-badge">Jour</span>
-              {% elif planning.periode == 'soir' %}
-                <span class="badge bg-warning planning-badge">Soir</span>
-              {% else %}
-                <span class="badge bg-dark planning-badge">Nuit</span>
-              {% endif %}
-            </td>
-            <td class="text-nowrap small">
-              {{ planning.heure_debut|time:"H\\hi" }} - {{ planning.heure_fin|time:"H\\hi" }}
-            </td>
-            <td>
-              {% if planning.poste_assigne %}
-                <span class="text-info small">{{ planning.poste_assigne|slice:":15" }}{% if planning.poste_assigne|length > 15 %}...{% endif %}</span>
-              {% else %}—
-              {% endif %}
-            </td>
-            <td>
-              <small class="text-muted">
-                {% if planning.notes %}
-                  {{ planning.notes|truncatewords:8 }}
-                {% else %}—
-                {% endif %}
-              </small>
-            </td>
-            <td class="text-center">
-              <a href="{% url 'staff:planning_update' planning.pk %}" class="text-warning me-2 action-icon" title="Modifier" data-bs-toggle="tooltip">
-                <i class="icon cil-pencil"></i>
-              </a>
-              <i class="icon cil-trash text-danger action-icon" 
-                 title="Supprimer" 
-                 data-bs-toggle="tooltip" 
-                 onclick="confirmDelete({{ planning.id }})">
-              </i>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
-              <i class="fa fa-calendar-times fa-3x mb-3 opacity-25"></i>
-              <p>Aucun planning trouvé</p>
-              <a href="{% url 'staff:planning_create' %}" class="btn btn-primary btn-sm">
-                <i class="fa fa-plus"></i> Créer le premier
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
   </div>
-
-  <!-- Pagination -->
-  {% if is_paginated %}
-    <nav class="mt-4">
-      <ul class="pagination pagination-sm justify-content-center">
-        {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">First</a></li>
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Previous</a></li>
-        {% endif %}
-        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-        {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Next</a></li>
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Last</a></li>
-        {% endif %}
-      </ul>
-    </nav>
-  {% endif %}
 </div>
-{% endblock %}
+
+<!-- Modal Bootstrap pour Create/Update -->
+<div class="modal fade" id="modal-entity" tabindex="-1" aria-labelledby="entityModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content"></div>
+  </div>
+</div>
+
+{% csrf_token %}
+{% endblock content %}
+
 
 {% block extra_js %}
-<script>
-  function confirmDelete(id) {
-    if (confirm("Supprimer ce planning ?")) {
-      window.location.href = "{% url 'staff:planning_delete' 999 %}".replace('999', id);
-    }
-  }
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+<script defer>
+document.addEventListener("DOMContentLoaded", () => {
+  // 🔥 Suppression via SweetAlert2
+  document.querySelectorAll(".delete-planning-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const url = btn.dataset.url;
+      const name = btn.dataset.name;
+
+      Swal.fire({
+        title: `Supprimer le planning de ${name} ?`,
+        text: "Cette action est irréversible !",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Oui, supprimer",
+        cancelButtonText: "Annuler",
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          fetch(url, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if (data.form_is_valid || data.success) {
+              Swal.fire("Supprimé !", "Le planning a été supprimé.", "success")
+                .then(() => location.reload());
+            } else {
+              Swal.fire("Erreur !", "Impossible de supprimer ce planning.", "error");
+            }
+          })
+          .catch(() => Swal.fire("Erreur !", "Une erreur est survenue.", "error"));
+        }
+      });
+    });
   });
+});
 </script>
-{% endblock %}
+
+<!-- ⚙️ Modal AJAX (Create/Update) -->
+<script defer>
+var idModalEntity = "#modal-entity";
+var clCreateEntity = ".js-create-entity";
+var clUpdateEntity = ".js-update-entity";
+var clCreateForm = ".js-entity-create-form";
+var clUpdateForm = ".js-entity-update-form";
+
+function loadForm() {
+  var btn = $(this);
+  $.ajax({
+    url: btn.attr("data-url"),
+    type: 'GET',
+    dataType: 'json',
+    success: function(data) {
+      $(idModalEntity + " .modal-content").html(data.html_form);
+      $(idModalEntity).modal('show');
+    },
+    error: function(xhr) {
+      console.error("Erreur chargement formulaire:", xhr.responseText);
+      alert("Impossible de charger le formulaire.");
+    }
+  });
+}
+
+function saveForm() {
+  var form = $(this);
+  $.ajax({
+    url: form.attr("action"),
+    data: form.serialize(),
+    type: 'POST',
+    dataType: 'json',
+    success: function(data) {
+      if (data.form_is_valid) {
+        $(idModalEntity).modal('hide');
+        if (data.url_redirect) {
+          window.location.href = data.url_redirect;
+        } else {
+          location.reload();
+        }
+      } else {
+        $(idModalEntity + " .modal-content").html(data.html_form);
+      }
+    },
+    error: function(xhr) {
+      console.error("Erreur sauvegarde:", xhr.responseText);
+      alert("Erreur lors de la sauvegarde. Ouvre la console (F12).");
+    }
+  });
+  return false;
+}
+
+$(document).on("click", clCreateEntity, loadForm);
+$(document).on("click", clUpdateEntity, loadForm);
+$(idModalEntity).on("submit", clCreateForm, saveForm);
+$(idModalEntity).on("submit", clUpdateForm, saveForm);
+</script>
+{% endblock extra_js %}

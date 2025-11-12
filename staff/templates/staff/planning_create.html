@@ -1,0 +1,19 @@
+<!-- Modal pour création d'un planning -->
+<form method="post" action="{% url 'staff:planning_create' %}" class="js-entity-create-form">
+    {% csrf_token %}
+    <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+            <i class="fas fa-calendar-plus"></i> Créer un Nouveau Planning
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        {% include 'staff/planning_form.html' %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Créer le Planning</button>
+    </div>
+</form>
