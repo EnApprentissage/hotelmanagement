@@ -1,0 +1,24 @@
+<!-- Modal pour modification d'un congé -->
+<form method="post" action="{% url 'staff:conge_update' object.pk %}" class="js-entity-update-form">
+    {% csrf_token %}
+    
+    <div class="modal-header bg-warning text-white">
+        <h5 class="modal-title">
+            <i class="cil-pencil"></i> Modifier le Congé
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        {% include 'staff/conge_form.html' %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="cil-x"></i> Annuler
+        </button>
+        <button type="submit" class="btn btn-warning text-white">
+            <i class="cil-check"></i> Enregistrer les modifications
+        </button>
+    </div>
+</form>

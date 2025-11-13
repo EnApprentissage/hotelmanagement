@@ -4,6 +4,7 @@ from urllib import request
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.db.models import Q
@@ -220,32 +221,65 @@ class PlanningListView(ListView):
     template_name = 'staff/planning_list.html'
     context_object_name = 'plannings'
     ordering = ['-date']
-    paginate_by = 10  # ✅ 10 plannings par page
+    paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        date_debut = self.request.GET.get('date_debut')
-        date_fin = self.request.GET.get('date_fin')
-        employe_id = self.request.GET.get('employe')
+        queryset = super().get_queryset().select_related('employe')
+        
+        # 🔍 Récupération des paramètres de filtrage
+        nom = self.request.GET.get('nom', '').strip()
+        prenom = self.request.GET.get('prenom', '').strip()
+        matricule = self.request.GET.get('matricule', '').strip()
+        departement = self.request.GET.get('departement', '').strip()
+        periode = self.request.GET.get('periode', '').strip()
 
-        # ✅ Filtrage dynamique
-        if date_debut:
-            queryset = queryset.filter(date__gte=date_debut)
-        if date_fin:
-            queryset = queryset.filter(date__lte=date_fin)
-        if employe_id:
-            queryset = queryset.filter(employe_id=employe_id)
+        # ✅ Filtrage par nom de l'employé
+        if nom:
+            queryset = queryset.filter(employe__nom__icontains=nom)
+        
+        # ✅ Filtrage par prénom de l'employé
+        if prenom:
+            queryset = queryset.filter(employe__prenom__icontains=prenom)
+        
+        # ✅ Filtrage par matricule de l'employé
+        if matricule:
+            queryset = queryset.filter(employe__matricule__icontains=matricule)
+        
+        # ✅ Filtrage par département de l'employé
+        if departement:
+            queryset = queryset.filter(employe__departement=departement)
+        
+        # ✅ Filtrage par période
+        if periode:
+            queryset = queryset.filter(periode=periode)
 
-        return queryset.order_by('-date')
+        return queryset.order_by('-date', 'employe__nom')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['employes'] = Employe.objects.all().order_by('prenom')
+        
+        # 📋 Liste des départements uniques
+        context['departements'] = (
+            Employe.objects.exclude(departement__isnull=True)
+            .exclude(departement='')
+            .values_list('departement', flat=True)
+            .distinct()
+            .order_by('departement')
+        )
+        
+        # ✅ Indiquer qu'on utilise la pagination
         context['is_paginated'] = self.paginate_by is not None
+        
         return context
+    
+
+class PlanningDetailView(DetailView):
+    model = Planning
+    template_name = 'staff/planning_detail.html'
+    context_object_name = 'planning'
 
 
-
+    
 class PlanningCreateView(BaseAjaxCreateView):
     model = Planning
     form_class = PlanningForm
@@ -255,6 +289,7 @@ class PlanningCreateView(BaseAjaxCreateView):
 
     def get(self, request, *args, **kwargs):
         """Charger le formulaire vide dans la modale"""
+        print("=== GET PlanningCreateView ===")
         self.object = None
         form = self.get_form()
         
@@ -268,52 +303,68 @@ class PlanningCreateView(BaseAjaxCreateView):
 
     def post(self, request, *args, **kwargs):
         """Traiter la soumission du formulaire"""
+        print("=== POST PlanningCreateView ===")
+        print("POST data:", request.POST)
+        
         self.object = None
         form = self.get_form()
         
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
         if form.is_valid():
+            print("✅ Formulaire valide")
             return self.form_valid(form)
         else:
+            print("❌ Formulaire invalide")
             return self.form_invalid(form)
 
     def form_valid(self, form):
         """Sauvegarder et rediriger"""
         try:
+            print("=== form_valid (CREATE) ===")
             instance = form.save(commit=False)
-            instance.user_id = self.request.user.id
+            
+            # ✅ Assigner l'utilisateur si nécessaire
+            if hasattr(instance, 'user_id') and not instance.user_id:
+                instance.user_id = self.request.user.id
+                print(f"User assigné: {instance.user_id}")
+            
             instance.save()
+            print(f"✅ Planning créé: ID={instance.pk}, Date={instance.date}, Employé={instance.employe}")
 
-            # Message de succès (optionnel, si tu utilises messages)
+            # ✅ Message de succès
             if self.success_message:
                 messages.success(self.request, self.success_message)
 
             return JsonResponse({
-                'form_is_valid': True,
-                'url_redirect': self.success_url  # Redirige vers la liste
+                'form_is_valid': True
             })
 
         except Exception as e:
-            return JsonResponse({
-                'form_is_valid': False,
-                'html_form': render_to_string(
-                    self.template_name,
-                    {'form': form, 'error': str(e)}, 
-                    request=self.request
-                )
-            })
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la création : {str(e)}")
+            return self.form_invalid(form)
 
     def form_invalid(self, form):
         """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (CREATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
         html_form = render_to_string(
             self.template_name,
             {'form': form}, 
             request=self.request
         )
+        
         return JsonResponse({
-            'form_is_valid': False,
-            'html_form': html_form
-        })
+       'form_is_valid': True,
+       'success': True  # ✅ Ajouté
+   })
 
+    
 class PlanningUpdateView(BaseAjaxUpdateView):
     model = Planning
     form_class = PlanningForm
@@ -322,59 +373,80 @@ class PlanningUpdateView(BaseAjaxUpdateView):
     success_message = _('Planning mis à jour avec succès')
 
     def get_object(self):
+        """Récupérer l'objet Planning"""
         return get_object_or_404(Planning, pk=self.kwargs['pk'])
 
     def get(self, request, *args, **kwargs):
+        """Charger le formulaire pré-rempli dans la modale"""
+        print(f"=== GET PlanningUpdateView (PK={self.kwargs['pk']}) ===")
         self.object = self.get_object()
         form = self.get_form()
+        
         html_form = render_to_string(
             self.template_name,
-            {'form': form},
+            {'form': form, 'object': self.object},
             request=request
         )
+        
         return JsonResponse({'html_form': html_form})
 
     def post(self, request, *args, **kwargs):
+        """Traiter la soumission du formulaire de modification"""
+        print(f"=== POST PlanningUpdateView (PK={self.kwargs['pk']}) ===")
+        print("POST data:", request.POST)
+        
         self.object = self.get_object()
         form = self.get_form()
+        
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
         if form.is_valid():
+            print("✅ Formulaire valide")
             return self.form_valid(form)
         else:
+            print("❌ Formulaire invalide")
             return self.form_invalid(form)
 
     def form_valid(self, form):
+        """Sauvegarder les modifications"""
         try:
+            print("=== form_valid (UPDATE) ===")
             instance = form.save(commit=False)
-            instance.save()  # user déjà assigné à la création
+            instance.save()
+            
+            print(f"✅ Planning modifié: ID={instance.pk}, Date={instance.date}, Employé={instance.employe}")
+            
+            # ✅ Message de succès
             if self.success_message:
                 messages.success(self.request, self.success_message)
 
             return JsonResponse({
-                'form_is_valid': True,
-                'url_redirect': self.success_url
+                'form_is_valid': True
             })
+            
         except Exception as e:
-            return JsonResponse({
-                'form_is_valid': False,
-                'html_form': render_to_string(
-                    self.template_name,
-                    {'form': form, 'error': str(e)},
-                    request=self.request
-                )
-            })
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la modification : {str(e)}")
+            return self.form_invalid(form)
 
     def form_invalid(self, form):
+        """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (UPDATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
         html_form = render_to_string(
             self.template_name,
-            {'form': form},
+            {'form': form, 'object': self.object},
             request=self.request
         )
         return JsonResponse({
-            'form_is_valid': False,
-            'html_form': html_form
-        })
+       'form_is_valid': True,
+       'success': True  # ✅ Ajouté
+   })
 
-    
 
 class PlanningDeleteView(DeleteView):
     model = Planning
@@ -434,94 +506,170 @@ class CongeListView(ListView):
     model = Conge
     template_name = 'staff/conge_list.html'
     context_object_name = 'conges'
-    ordering = ['-date_demande']
+    ordering = ['-date_debut']
     paginate_by = 10
 
     def get_queryset(self):
-        qs = Conge.objects.select_related('employe').all()
-        employe = self.request.GET.get('employe')
-        date_debut = self.request.GET.get('date_debut')
-        date_fin = self.request.GET.get('date_fin')
+        queryset = super().get_queryset().select_related('employe')
+        
+        # Récupération des paramètres de filtrage
+        nom = self.request.GET.get('nom', '').strip()
+        prenom = self.request.GET.get('prenom', '').strip()
+        matricule = self.request.GET.get('matricule', '').strip()
+        departement = self.request.GET.get('departement', '').strip()
+        type_conge = self.request.GET.get('type_conge', '').strip()
+        statut = self.request.GET.get('statut', '').strip()
 
-        if employe:
-            qs = qs.filter(employe_id=employe)
-        if date_debut:
-            qs = qs.filter(date_debut__gte=date_debut)
-        if date_fin:
-            qs = qs.filter(date_fin__lte=date_fin)
-        return qs
+        # Filtrage par nom de l'employé
+        if nom:
+            queryset = queryset.filter(employe__nom__icontains=nom)
+        
+        # Filtrage par prénom de l'employé
+        if prenom:
+            queryset = queryset.filter(employe__prenom__icontains=prenom)
+        
+        # Filtrage par matricule de l'employé
+        if matricule:
+            queryset = queryset.filter(employe__matricule__icontains=matricule)
+        
+        # Filtrage par département de l'employé
+        if departement:
+            queryset = queryset.filter(employe__departement=departement)
+        
+        # Filtrage par type de congé
+        if type_conge:
+            queryset = queryset.filter(type_conge=type_conge)
+        
+        # Filtrage par statut
+        if statut:
+            queryset = queryset.filter(statut=statut)
+
+        return queryset.order_by('-date_debut', 'employe__nom')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['employes'] = Employe.objects.all()
+        
+        # Liste des départements uniques
+        context['departements'] = (
+            Employe.objects.exclude(departement__isnull=True)
+            .exclude(departement='')
+            .values_list('departement', flat=True)
+            .distinct()
+            .order_by('departement')
+        )
+        
+        # Récupérer les choices depuis le champ du modèle
+        type_conge_field = Conge._meta.get_field('type_conge')
+        context['type_choices'] = type_conge_field.choices  # <-- CORRIGÉ
+
+        statut_field = Conge._meta.get_field('statut')
+        context['statut_choices'] = statut_field.choices  # <-- CORRIGÉ
+
+        # Indiquer qu'on utilise la pagination
+        context['is_paginated'] = self.paginate_by is not None
+        
         return context
 
+class CongeDetailView(DetailView):
+    model = Conge
+    template_name = 'staff/conge_detail.html'
+    context_object_name = 'conge'
 
-class CongeCreateView(BaseAjaxCreateView):
+
+class CongeCreateView(View):
+    def get(self, request, *args, **kwargs):
+        form = CongeForm()
+        html = render_to_string('staff/conge_form.html', {'form': form}, request=request)
+        return JsonResponse({'html_form': html})
+
+    def post(self, request, *args, **kwargs):
+        form = CongeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'form_is_valid': True})
+        else:
+            html = render_to_string('staff/conge_form.html', {'form': form}, request=request)
+            return JsonResponse({'form_is_valid': False, 'html_form': html})
+
+class CongeUpdateView(BaseAjaxUpdateView):
     model = Conge
     form_class = CongeForm
     template_name = 'staff/conge_form.html'
-    success_url = reverse_lazy('staff:conge_list')
+    success_message = _('Congé mis à jour avec succès')
+
+    def get_object(self):
+        return get_object_or_404(Conge, pk=self.kwargs['pk'])
 
     def get(self, request, *args, **kwargs):
-        """Charge le formulaire vide dans la modale"""
+        """Charger le formulaire pré-rempli dans la modale"""
+        print(f"=== GET CongeUpdateView (PK={self.kwargs['pk']}) ===")
+        self.object = self.get_object()
         form = self.get_form()
-        html_form = render_to_string(self.template_name, {'form': form}, request=request)
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form, 'object': self.object},
+            request=request
+        )
+        
         return JsonResponse({'html_form': html_form})
 
     def post(self, request, *args, **kwargs):
-        """Traite la soumission AJAX"""
+        """Traiter la soumission du formulaire de modification"""
+        print(f"=== POST CongeUpdateView (PK={self.kwargs['pk']}) ===")
+        print("POST data:", request.POST)
+        
+        self.object = self.get_object()
         form = self.get_form()
+        
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
         if form.is_valid():
+            print("Formulaire valide")
             return self.form_valid(form)
-        return self.form_invalid(form)
+        else:
+            print("Formulaire invalide")
+            return self.form_invalid(form)
 
     def form_valid(self, form):
-        instance = form.save(commit=False)
-        instance.save()
-        data = {
-            'form_is_valid': True,
-            'success_message': self.success_message,
-        }
-        return JsonResponse(data)
+        """Sauvegarder les modifications"""
+        try:
+            print("=== form_valid (UPDATE) ===")
+            instance = form.save(commit=False)
+            instance.save()
+            
+            print(f"Conge modifié: ID={instance.pk}, Employé={instance.employe}, Dates={instance.date_debut} → {instance.date_fin}")
+            
+            if self.success_message:
+                messages.success(self.request, self.success_message)
+
+            return JsonResponse({
+                'form_is_valid': True
+            })
+            
+        except Exception as e:
+            print(f"ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la modification : {str(e)}")
+            return self.form_invalid(form)
 
     def form_invalid(self, form):
-        html_form = render_to_string(self.template_name, {'form': form}, request=self.request)
-        return JsonResponse({'form_is_valid': False, 'html_form': html_form})
+        """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (UPDATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form, 'object': self.object},
+            request=self.request
+        )
+        return JsonResponse({
+            'form_is_valid': False,  # CORRIGÉ
+            'html_form': html_form
+        })
 
-
-
-class CongeUpdateView(UpdateView):
-    model = Conge
-    form_class = CongeForm
-    template_name = 'staff/conge_form.html'
-    success_url = reverse_lazy('staff:conge_list')
-
-    def get(self, request, *args, **kwargs):
-        """Charge le formulaire vide dans la modale"""
-        form = self.get_form()
-        html_form = render_to_string(self.template_name, {'form': form}, request=request)
-        return JsonResponse({'html_form': html_form})
-
-    def post(self, request, *args, **kwargs):
-        """Traite la soumission AJAX"""
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
-
-    def form_valid(self, form):
-        instance = form.save(commit=False)
-        instance.save()
-        data = {
-            'form_is_valid': True,
-            'success_message': self.success_message,
-        }
-        return JsonResponse(data)
-
-    def form_invalid(self, form):
-        html_form = render_to_string(self.template_name, {'form': form}, request=self.request)
-        return JsonResponse({'form_is_valid': False, 'html_form': html_form})
     
 class CongeDeleteView(DeleteView):
     model = Conge

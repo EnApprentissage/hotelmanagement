@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     CongeDeleteView,
+    CongeDetailView,
     CongeListView,
     CongeCreateView,
     CongeUpdateView,
@@ -14,6 +15,7 @@ from .views import (
     PlanningDeleteView,
     PlanningListView,
     PlanningUpdateView,
+    PlanningDetailView,
 )
 
 app_name = 'staff'
@@ -29,11 +31,13 @@ urlpatterns = [
     path('planning/', PlanningListView.as_view(), name='planning_list'),
     path('planning/create/', PlanningCreateView.as_view(), name='planning_create'),
     path('planning/<int:pk>/update/', PlanningUpdateView.as_view(), name='planning_update'),
+    path('planning/<int:pk>/', PlanningDetailView.as_view(), name='planning_detail'),
     path('planning/<int:pk>/delete/', PlanningDeleteView.as_view(), name='planning_delete'),
 
     # Congé URLs
     path('conges/', CongeListView.as_view(), name='conge_list'),
-    path('conges/add/', CongeCreateView.as_view(), name='conge_create'),
-    path('conges/<int:pk>/edit/', CongeUpdateView.as_view(), name='conge_update'),
+    path('conges/<int:pk>/', CongeDetailView.as_view(), name='conge_detail'),
+    path('conges/create/', CongeCreateView.as_view(), name='conge_create'),
+    path('conges/<int:pk>/update/', CongeUpdateView.as_view(), name='conge_update'),
     path('conges/<int:pk>/delete/', CongeDeleteView.as_view(), name='conge_delete'),
 ]

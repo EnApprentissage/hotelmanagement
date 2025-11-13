@@ -1,0 +1,81 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Détails du planning{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4"></div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="cil-calendar"></i> Détails du planning de {{ planning.employe.nom }} {{ planning.employe.prenom }}
+        </h5>
+        <a href="{% url 'staff:planning_list' %}" class="btn btn-sm btn-secondary">
+          <i class="cil-arrow-left"></i> Retour
+        </a>
+      </div>
+
+      <div class="card-body row">
+        
+        <!-- Photo employé -->
+        <div class="col-md-3 text-center mb-3">
+          {% if planning.employe.photo %}
+            <img src="{{ planning.employe.photo.url }}" class="rounded-circle shadow-sm" width="120" height="120">
+          {% else %}
+            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" 
+                 style="width:120px;height:120px;font-size:2rem;">
+              {{ planning.employe.prenom.0|upper }}{{ planning.employe.nom.0|upper }}
+            </div>
+          {% endif %}
+          <p class="mt-2 mb-0 fw-bold">{{ planning.employe.nom }} {{ planning.employe.prenom }}</p>
+          <small class="text-muted">{{ planning.employe.poste|default:"—" }}</small>
+        </div>
+
+        <!-- Informations planning -->
+        <div class="col-md-9">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Date :</strong> {{ planning.date|date:"d/m/Y"|default:"—" }}
+            </li>
+            <li class="list-group-item">
+              <strong>Période :</strong> {{ planning.periode|default:"—" }}
+            </li>
+            <li class="list-group-item">
+              <strong>Heure de début :</strong> {{ planning.heure_debut|time:"H:i"|default:"—" }}
+            </li>
+            <li class="list-group-item">
+              <strong>Heure de fin :</strong> {{ planning.heure_fin|time:"H:i"|default:"—" }}
+            </li>
+            <li class="list-group-item">
+              <strong>Poste assigné :</strong> {{ planning.poste_assigne|default:"—" }}
+            </li>
+            <li class="list-group-item">
+              <strong>Notes :</strong> 
+              {% if planning.notes %}
+                <p class="mb-0">{{ planning.notes|linebreaks }}</p>
+              {% else %}
+                <span class="text-muted">Aucune note</span>
+              {% endif %}
+            </li>
+          </ul>
+
+          <div class="mt-3">
+            <a href="{% url 'staff:planning_update' planning.pk %}" class="btn btn-warning">
+              <i class="fa fa-edit"></i> Modifier
+            </a>
+            <a href="{% url 'staff:planning_list' %}" class="btn btn-secondary">
+              <i class="fa fa-list"></i> Retour à la liste
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

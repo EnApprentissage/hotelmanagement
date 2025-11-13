@@ -1,70 +1,145 @@
-{% load i18n widget_tweaks %}
+{% load widget_tweaks %}
 
+<!-- Formulaire complet avec header, body et footer -->
 <form method="post" 
       action="{% if form.instance.pk %}{% url 'staff:planning_update' form.instance.pk %}{% else %}{% url 'staff:planning_create' %}{% endif %}"
-      class="js-entity-form {% if form.instance.pk %}js-entity-update-form{% else %}js-entity-create-form{% endif %}"
-      novalidate>
+      class="js-entity-create-form js-entity-update-form">
   {% csrf_token %}
-
+  
   <div class="modal-header bg-primary text-white">
     <h5 class="modal-title">
       {% if form.instance.pk %}
-        {% trans "Modifier le planning" %}
+        <i class="cil-pencil"></i> Modifier le planning
       {% else %}
-        {% trans "Ajouter un planning" %}
+        <i class="cil-calendar-plus"></i> Ajouter un planning
       {% endif %}
     </h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
   </div>
 
   <div class="modal-body">
+    
+    <!-- Affichage des erreurs globales -->
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="cil-warning"></i>
+        {{ form.non_field_errors }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+
     <div class="row g-3">
+      
+      <!-- Employé -->
       <div class="col-md-6">
-        <label class="form-label">{% trans "Employé" %} <span class="text-danger">*</span></label>
+        <label for="{{ form.employe.id_for_label }}" class="form-label">
+          <i class="cil-user"></i> Employé <span class="text-danger">*</span>
+        </label>
         {{ form.employe|add_class:"form-select" }}
-        {{ form.employe.errors }}
+        {% if form.employe.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.employe.errors|first }}
+          </div>
+        {% endif %}
+        <small class="form-text text-muted">Sélectionnez l'employé concerné</small>
       </div>
+
+      <!-- Date -->
       <div class="col-md-6">
-        <label class="form-label">{% trans "Date" %} <span class="text-danger">*</span></label>
-        {{ form.date|add_class:"form-control" }}
-        {{ form.date.errors }}
+        <label for="{{ form.date.id_for_label }}" class="form-label">
+          <i class="cil-calendar"></i> Date <span class="text-danger">*</span>
+        </label>
+        {{ form.date|add_class:"form-control"|attr:"type:date" }}
+        {% if form.date.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.date.errors|first }}
+          </div>
+        {% endif %}
+        <small class="form-text text-muted">Date du planning</small>
       </div>
+
+      <!-- Période -->
       <div class="col-md-4">
-        <label class="form-label">{% trans "Période" %} <span class="text-danger">*</span></label>
+        <label for="{{ form.periode.id_for_label }}" class="form-label">
+          <i class="cil-sun"></i> Période <span class="text-danger">*</span>
+        </label>
         {{ form.periode|add_class:"form-select" }}
-        {{ form.periode.errors }}
+        {% if form.periode.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.periode.errors|first }}
+          </div>
+        {% endif %}
       </div>
+
+      <!-- Heure début -->
       <div class="col-md-4">
-        <label class="form-label">{% trans "Heure début" %} <span class="text-danger">*</span></label>
-        {{ form.heure_debut|add_class:"form-control" }}
-        {{ form.heure_debut.errors }}
+        <label for="{{ form.heure_debut.id_for_label }}" class="form-label">
+          <i class="cil-clock"></i> Heure début <span class="text-danger">*</span>
+        </label>
+        {{ form.heure_debut|add_class:"form-control"|attr:"type:time" }}
+        {% if form.heure_debut.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.heure_debut.errors|first }}
+          </div>
+        {% endif %}
       </div>
+
+      <!-- Heure fin -->
       <div class="col-md-4">
-        <label class="form-label">{% trans "Heure fin" %} <span class="text-danger">*</span></label>
-        {{ form.heure_fin|add_class:"form-control" }}
-        {{ form.heure_fin.errors }}
+        <label for="{{ form.heure_fin.id_for_label }}" class="form-label">
+          <i class="cil-clock"></i> Heure fin <span class="text-danger">*</span>
+        </label>
+        {{ form.heure_fin|add_class:"form-control"|attr:"type:time" }}
+        {% if form.heure_fin.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.heure_fin.errors|first }}
+          </div>
+        {% endif %}
       </div>
-      <div class="col-md-6">
-        <label class="form-label">{% trans "Poste assigné" %}</label>
+
+      <!-- Poste assigné -->
+      <div class="col-12">
+        <label for="{{ form.poste_assigne.id_for_label }}" class="form-label">
+          <i class="cil-briefcase"></i> Poste assigné
+        </label>
         {{ form.poste_assigne|add_class:"form-control" }}
-        {{ form.poste_assigne.errors }}
+        {% if form.poste_assigne.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.poste_assigne.errors|first }}
+          </div>
+        {% endif %}
+        <small class="form-text text-muted">Ex: Réception, Cuisine, Service...</small>
       </div>
-      <div class="col-md-6">
-        <label class="form-label">{% trans "Notes" %}</label>
-        {{ form.notes|add_class:"form-control" }}
-        {{ form.notes.errors }}
+
+      <!-- Notes -->
+      <div class="col-12">
+        <label for="{{ form.notes.id_for_label }}" class="form-label">
+          <i class="cil-notes"></i> Notes
+        </label>
+        {{ form.notes|add_class:"form-control"|attr:"rows:3"|attr:"placeholder:Ajoutez des notes ou instructions particulières..." }}
+        {% if form.notes.errors %}
+          <div class="invalid-feedback d-block">
+            <i class="cil-warning"></i> {{ form.notes.errors|first }}
+          </div>
+        {% endif %}
       </div>
+      
+    </div>
+    
+    <div class="mt-3">
+      <small class="text-muted">
+        <i class="cil-info"></i> Les champs marqués d'un <span class="text-danger">*</span> sont obligatoires.
+      </small>
     </div>
   </div>
 
   <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Annuler" %}</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      <i class="cil-x"></i> Annuler
+    </button>
     <button type="submit" class="btn btn-primary">
-      {% if form.instance.pk %}
-        {% trans "Enregistrer" %}
-      {% else %}
-        {% trans "Ajouter" %}
-      {% endif %}
+      <i class="cil-check"></i> 
+      {% if form.instance.pk %}Modifier{% else %}Enregistrer{% endif %}
     </button>
   </div>
 </form>
