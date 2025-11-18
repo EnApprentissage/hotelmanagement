@@ -1,0 +1,131 @@
+<!-- staff/templates/staff/incident_form.html -->
+{% load widget_tweaks %}
+
+<!-- Affichage des erreurs globales (non-field errors) -->
+{% if form.non_field_errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="cil-warning"></i>
+    <strong>Erreur :</strong>
+    <ul class="mb-0">
+        {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <!-- Employé -->
+    <div class="col-md-12">
+        <label for="{{ form.employe.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-user"></i> Employé <span class="text-danger">*</span>
+        </label>
+        {% render_field form.employe class='form-select' %}
+        {% if form.employe.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.employe.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Type d'incident -->
+    <div class="col-md-6">
+        <label for="{{ form.type_incident.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-exclamation"></i> Type d'Incident <span class="text-danger">*</span>
+        </label>
+        {% render_field form.type_incident class='form-select' %}
+        {% if form.type_incident.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.type_incident.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Date de l'incident -->
+    <div class="col-md-6">
+        <label for="{{ form.date_incident.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar"></i> Date de l'incident <span class="text-danger">*</span>
+        </label>
+        {% render_field form.date_incident class='form-control' type='date' %}
+        {% if form.date_incident.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.date_incident.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Description -->
+    <div class="col-md-12">
+        <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-notes"></i> Description <span class="text-danger">*</span>
+        </label>
+        {% render_field form.description class="form-control" rows="3" placeholder="Décrivez incident..." %}
+        {% if form.description.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.description.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sanction -->
+    <div class="col-md-6">
+        <label for="{{ form.sanction.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-check-circle"></i> Sanction
+        </label>
+        {% render_field form.sanction class='form-select' %}
+        {% if form.sanction.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.sanction.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Date de sanction -->
+    <div class="col-md-6">
+        <label for="{{ form.date_sanction.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar"></i> Date de Sanction
+        </label>
+        {% render_field form.date_sanction class='form-control' type='date' %}
+        {% if form.date_sanction.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.date_sanction.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Signalé par -->
+    <div class="col-md-12">
+        <label for="{{ form.signale_par.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-user-follow"></i> Signalé par
+        </label>
+        {% render_field form.signale_par class='form-select' %}
+        {% if form.signale_par.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.signale_par.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Note -->
+<div class="alert alert-info mt-3 mb-0" role="alert">
+    <i class="cil-info"></i>
+    <small>
+        <strong>Note :</strong> Les champs marqués d'un astérisque (<span class="text-danger">*</span>) sont obligatoires.
+    </small>
+</div>

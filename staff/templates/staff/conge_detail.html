@@ -1,0 +1,485 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Détail du Congé - {{ conge.employe.nom }} {{ conge.employe.prenom }}{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .detail-card {
+    border-left: 4px solid #321fdb;
+  }
+  .employee-photo {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border: 3px solid #e9ecef;
+  }
+  .info-label {
+    font-weight: 600;
+    color: #768192;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .info-value {
+    font-size: 1.1rem;
+    color: #2c384a;
+    font-weight: 500;
+  }
+  .badge-large {
+    font-size: 0.9rem;
+    padding: 0.5em 1em;
+  }
+  .timeline-item {
+    position: relative;
+    padding-left: 2rem;
+    padding-bottom: 1.5rem;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #321fdb;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #321fdb;
+  }
+  .timeline-item::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1.5rem;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+  }
+  .timeline-item:last-child::after {
+    display: none;
+  }
+  .action-buttons .btn {
+    min-width: 120px;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'staff:conge_list' %}">Congés</a></li>
+          <li class="breadcrumb-item active">
+            <span>{{ conge.employe.nom }} {{ conge.employe.prenom }}</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container-fluid px-4 py-3">
+    <!-- En-tête avec actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-1">
+          <i class="fa fa-calendar-check me-2 text-primary"></i>
+          Détail du Congé
+        </h4>
+        <p class="text-muted mb-0">
+          <small>ID: #{{ conge.id }} | Créé le {{ conge.created_at|date:"d/m/Y à H:i" }}</small>
+        </p>
+      </div>
+      <div class="action-buttons">
+        <a href="{% url 'staff:conge_list' %}" class="btn btn-secondary">
+          <i class="cil-arrow-left"></i> Retour
+        </a>
+        <button type="button" class="btn btn-warning js-update-entity"
+                data-url="{% url 'staff:conge_update' conge.pk %}">
+          <i class="cil-pencil"></i> Modifier
+        </button>
+        <button type="button" class="btn btn-danger delete-btn"
+                data-url="{% url 'staff:conge_delete' conge.pk %}"
+                data-name="{{ conge.employe.nom }} {{ conge.employe.prenom }}">
+          <i class="cil-trash"></i> Supprimer
+        </button>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Colonne gauche : Informations employé -->
+      <div class="col-lg-4 mb-4">
+        <div class="card detail-card h-100">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-user me-2"></i> Employé
+            </h5>
+          </div>
+          <div class="card-body text-center">
+            {% if conge.employe.photo %}
+              <img src="{{ conge.employe.photo.url }}" 
+                   alt="{{ conge.employe.prenom }}" 
+                   class="rounded-circle employee-photo mb-3">
+            {% else %}
+              <div class="rounded-circle employee-photo bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                   style="font-size: 3rem;">
+                {{ conge.employe.prenom.0|upper }}{{ conge.employe.nom.0|upper }}
+              </div>
+            {% endif %}
+            
+            <h4 class="mb-1">{{ conge.employe.nom }} {{ conge.employe.prenom }}</h4>
+            <p class="text-muted mb-3">
+              <i class="cil-badge"></i> {{ conge.employe.matricule }}
+            </p>
+
+            <div class="text-start mt-4">
+              <div class="mb-3">
+                <span class="info-label d-block">Poste</span>
+                <span class="info-value">{{ conge.employe.poste|default:"Non défini" }}</span>
+              </div>
+              <div class="mb-3">
+                <span class="info-label d-block">Département</span>
+                <span class="info-value">{{ conge.employe.departement|default:"Non défini" }}</span>
+              </div>
+              <div class="mb-3">
+                <span class="info-label d-block">Email</span>
+                <span class="info-value">
+                  {% if conge.employe.email %}
+                    <a href="mailto:{{ conge.employe.email }}">{{ conge.employe.email }}</a>
+                  {% else %}
+                    Non renseigné
+                  {% endif %}
+                </span>
+              </div>
+              <div class="mb-3">
+                <span class="info-label d-block">Téléphone</span>
+                <span class="info-value">{{ conge.employe.telephone|default:"Non renseigné" }}</span>
+              </div>
+            </div>
+
+            <a href="{% url 'staff:employe_detail' conge.employe.pk %}" 
+               class="btn btn-outline-primary btn-sm mt-3">
+              <i class="cil-zoom-in"></i> Voir le profil complet
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : Détails du congé -->
+      <div class="col-lg-8">
+        <!-- Informations principales -->
+        <div class="card detail-card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-info me-2"></i> Informations du Congé
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Type de Congé</span>
+                <span class="badge bg-info badge-large">
+                  <i class="cil-sun me-1"></i> {{ conge.get_type_conge_display }}
+                </span>
+              </div>
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Statut</span>
+                {% if conge.statut == 'en_attente' %}
+                  <span class="badge bg-warning text-dark badge-large">
+                    <i class="cil-clock me-1"></i> En attente
+                  </span>
+                {% elif conge.statut == 'approuve' %}
+                  <span class="badge bg-success badge-large">
+                    <i class="cil-check-circle me-1"></i> Approuvé
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger badge-large">
+                    <i class="cil-x-circle me-1"></i> Refusé
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Date de Début</span>
+                <span class="info-value">
+                  <i class="cil-calendar text-primary me-2"></i>
+                  {{ conge.date_debut|date:"l d F Y" }}
+                </span>
+              </div>
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Date de Fin</span>
+                <span class="info-value">
+                  <i class="cil-calendar text-primary me-2"></i>
+                  {{ conge.date_fin|date:"l d F Y" }}
+                </span>
+              </div>
+
+              <div class="col-md-12 mb-4">
+                <span class="info-label d-block mb-2">Durée</span>
+                <span class="info-value">
+                  <i class="cil-list text-success me-2"></i>
+                  <strong>{{ conge.nombre_jours }}</strong> jour{{ conge.nombre_jours|pluralize }}
+                </span>
+              </div>
+
+              <div class="col-md-12">
+                <span class="info-label d-block mb-2">Motif</span>
+                {% if conge.motif %}
+                  <div class="alert alert-light border mb-0">
+                    <i class="cil-notes text-muted me-2"></i>
+                    {{ conge.motif }}
+                  </div>
+                {% else %}
+                  <span class="text-muted fst-italic">Aucun motif spécifié</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document justificatif (si présent) -->
+        {% if conge.document_justificatif %}
+        <div class="card detail-card mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-file me-2"></i> Document Justificatif
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <i class="cil-paperclip fa-2x text-info me-3"></i>
+              <div class="flex-grow-1">
+                <h6 class="mb-1">Document attaché</h6>
+                <small class="text-muted">{{ conge.document_justificatif.name }}</small>
+              </div>
+              <a href="{{ conge.document_justificatif.url }}" 
+                 target="_blank" 
+                 class="btn btn-outline-info">
+                <i class="cil-cloud-download"></i> Télécharger
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Historique / Timeline -->
+        <div class="card detail-card">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-history me-2"></i> Historique
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="timeline-item">
+              <strong>Création de la demande</strong>
+              <p class="text-muted mb-0">
+                <small>{{ conge.created_at|date:"d/m/Y à H:i" }}</small>
+              </p>
+            </div>
+            
+            {% if conge.updated_at != conge.created_at %}
+            <div class="timeline-item">
+              <strong>Dernière modification</strong>
+              <p class="text-muted mb-0">
+                <small>{{ conge.updated_at|date:"d/m/Y à H:i" }}</small>
+              </p>
+            </div>
+            {% endif %}
+
+            {% if conge.statut == 'approuve' %}
+            <div class="timeline-item">
+              <strong class="text-success">Congé approuvé</strong>
+              <p class="text-muted mb-0">
+                <small>{{ conge.updated_at|date:"d/m/Y à H:i" }}</small>
+              </p>
+            </div>
+            {% elif conge.statut == 'refuse' %}
+            <div class="timeline-item">
+              <strong class="text-danger">Congé refusé</strong>
+              <p class="text-muted mb-0">
+                <small>{{ conge.updated_at|date:"d/m/Y à H:i" }}</small>
+              </p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour update -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const deleteBtn = document.querySelector(".delete-btn");
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            
+            const url = deleteBtn.dataset.url;
+            const nom = deleteBtn.dataset.name;
+            
+            Swal.fire({
+                title: `Supprimer le congé de ${nom} ?`,
+                text: "Cette action est irréversible !",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                reverseButtons: true
+            }).then(result => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Suppression en cours...',
+                        html: 'Veuillez patienter',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                        },
+                    })
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if(data.form_is_valid || data.success){
+                            Swal.fire({
+                                icon: "success",
+                                title: "Supprimé !",
+                                text: "Le congé a été supprimé avec succès.",
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.href = "{% url 'staff:conge_list' %}";
+                            });
+                        } else {
+                            Swal.fire("Erreur !", "Impossible de supprimer.", "error");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Erreur:", error);
+                        Swal.fire("Erreur !", "Une erreur est survenue.", "error");
+                    });
+                }
+            });
+        });
+    }
+    
+    // ========================================
+    // MODAL AJAX (Update uniquement)
+    // ========================================
+    var idModalEntity = "#modal-entity";
+    var clUpdateEntity = ".js-update-entity";
+    var clUpdateForm = ".js-entity-update-form";
+
+    function loadForm() {
+        var btn = $(this);
+        
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: 'GET',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Chargement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                Swal.close();
+                $(idModalEntity + " .modal-content").html(data.html_form);
+                $(idModalEntity).modal('show');
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Impossible de charger le formulaire.",
+                });
+            }
+        });
+    }
+
+    function saveForm() {
+        var form = $(this);
+        
+        $.ajax({
+            url: form.attr("action"),
+            data: form.serialize(),
+            type: 'POST',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Enregistrement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                if (data.form_is_valid === true || data.success === true) {
+                    $(idModalEntity).modal('hide');
+                    
+                    Swal.fire({
+                        icon: "success",
+                        title: "Succès !",
+                        text: "Le congé a été modifié avec succès.",
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.close();
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Erreur lors de la sauvegarde.",
+                });
+            }
+        });
+        return false;
+    }
+
+    $(document).on("click", clUpdateEntity, loadForm);
+    $(idModalEntity).on("submit", clUpdateForm, saveForm);
+});
+</script>
+
+{% endblock content %}

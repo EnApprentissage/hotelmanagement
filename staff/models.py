@@ -29,6 +29,7 @@ class Employe(models.Model):
     prenom = models.CharField(_("Prénom"), max_length=100)
     date_naissance = models.DateField(_("Date de naissance"), null=True, blank=True)
     lieu_naissance = models.CharField(_("Lieu de naissance"), max_length=100, blank=True)
+    sexe = models.CharField(choices=[('M', 'Masculin'), ('F', 'Féminin')], max_length=1, null=True, blank=True)
     nationalite = models.CharField(_("Nationalité"), max_length=50, default="Marocaine")
     etat_civil = models.CharField(_("État civil"), max_length=20, choices=ETAT_CIVIL_CHOICES, default='celibataire')
     matricule = models.CharField(

@@ -1,55 +1,156 @@
 <!-- staff/templates/staff/conge_form.html -->
 {% load widget_tweaks %}
 
-<form method="post" 
-      action="{% if object %}{% url 'staff:conge_update' object.pk %}{% else %}{% url 'staff:conge_create' %}{% endif %}"
-      class="js-entity-{% if object %}update{% else %}create{% endif %}-form">
+<!-- Affichage des erreurs globales (non-field errors) -->
+{% if form.non_field_errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="cil-warning"></i>
+    <strong>Erreur :</strong>
+    <ul class="mb-0">
+        {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
 
-    {% csrf_token %}
-
-    <div class="modal-header bg-{% if object %}warning{% else %}primary{% endif %} text-white">
-        <h5 class="modal-title">
-            <i class="cil-sun"></i> 
-            {% if object %}Modifier{% else %}Créer{% endif %} un Congé
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-    </div>
-
-    <div class="modal-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Employé</label>
-                {{ form.employe|add_class:"form-select" }}
-                {% if form.employe.errors %}
-                    <div class="text-danger small">{{ form.employe.errors }}</div>
-                {% endif %}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Type</label>
-                {{ form.type_conge|add_class:"form-select" }}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Date début</label>
-                {{ form.date_debut|add_class:"form-control" }}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Date fin</label>
-                {{ form.date_fin|add_class:"form-control" }}
-            </div>
-            <div class="col-12">
-                <label class="form-label">Motif</label>
-                {{ form.motif|add_class:"form-control" }}
-            </div>
+<div class="row g-3">
+    <!-- Employé -->
+    <div class="col-md-12">
+        <label for="{{ form.employe.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-user"></i> Employé <span class="text-danger">*</span>
+        </label>
+        {% render_field form.employe class="form-select" %}
+        {% if form.employe.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.employe.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
         </div>
+        {% endif %}
     </div>
 
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="cil-x"></i> Annuler
-        </button>
-        <button type="submit" class="btn btn-{% if object %}warning{% else %}primary{% endif %}">
-            <i class="cil-check"></i> 
-            {% if object %}Enregistrer{% else %}Créer{% endif %}
-        </button>
+    <!-- Type de congé -->
+    <div class="col-md-6">
+        <label for="{{ form.type_conge.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-sun"></i> Type de Congé <span class="text-danger">*</span>
+        </label>
+        {% render_field form.type_conge class="form-select" %}
+        {% if form.type_conge.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.type_conge.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
-</form>
+
+    <!-- Statut -->
+    <div class="col-md-6">
+        <label for="{{ form.statut.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-check-circle"></i> Statut <span class="text-danger">*</span>
+        </label>
+        {% render_field form.statut class="form-select" %}
+        {% if form.statut.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.statut.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Date début -->
+    <div class="col-md-6">
+        <label for="{{ form.date_debut.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar"></i> Date de Début <span class="text-danger">*</span>
+        </label>
+        {% render_field form.date_debut class="form-control" type="date" %}
+        {% if form.date_debut.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.date_debut.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Date fin -->
+    <div class="col-md-6">
+        <label for="{{ form.date_fin.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar"></i> Date de Fin <span class="text-danger">*</span>
+        </label>
+        {% render_field form.date_fin class="form-control" type="date" %}
+        {% if form.date_fin.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.date_fin.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Nombre de jours (si votre modèle le supporte) -->
+    {% if form.nombre_jours %}
+    <div class="col-md-12">
+        <label for="{{ form.nombre_jours.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-list"></i> Nombre de Jours
+        </label>
+        {% render_field form.nombre_jours class="form-control" type="number" min="1" %}
+        <small class="form-text text-muted">
+            Ce champ peut être calculé automatiquement selon les dates.
+        </small>
+        {% if form.nombre_jours.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.nombre_jours.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Motif -->
+    <div class="col-md-12">
+        <label for="{{ form.motif.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-notes"></i> Motif
+        </label>
+        {% render_field form.motif class="form-control" rows="3" placeholder="Raison du congé..." %}
+        {% if form.motif.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.motif.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Document justificatif (si votre modèle le supporte) -->
+    {% if form.document_justificatif %}
+    <div class="col-md-12">
+        <label for="{{ form.document_justificatif.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-file"></i> Document Justificatif
+        </label>
+        {% render_field form.document_justificatif class="form-control" %}
+        <small class="form-text text-muted">
+            Formats acceptés : PDF, JPG, PNG (max 5MB)
+        </small>
+        {% if form.document_justificatif.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.document_justificatif.errors %}
+            <i class="cil-warning"></i> {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Note informative -->
+<div class="alert alert-info mt-3 mb-0" role="alert">
+    <i class="cil-info"></i>
+    <small>
+        <strong>Note :</strong> Les champs marqués d'un astérisque (<span class="text-danger">*</span>) sont obligatoires.
+    </small>
+</div>

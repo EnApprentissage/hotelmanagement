@@ -1,60 +1,597 @@
 {% extends 'layouts/base.html' %}
+{% load static %}
+{% load custom_filters %}
 
-{% block title %}Détails de {{ employe.nom }}{% endblock %}
+
+{% block title %}Profil - {{ employe.nom }} {{ employe.prenom }}{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .detail-card {
+    border-left: 4px solid #321fdb;
+  }
+  .employee-photo-large {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 4px solid #e9ecef;
+  }
+  .info-label {
+    font-weight: 600;
+    color: #768192;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .info-value {
+    font-size: 1.1rem;
+    color: #2c384a;
+    font-weight: 500;
+  }
+  .badge-large {
+    font-size: 0.9rem;
+    padding: 0.5em 1em;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  .stat-card .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  .action-buttons .btn {
+    min-width: 120px;
+  }
+  .section-title {
+    border-left: 4px solid #321fdb;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock extra_css %}
 
 {% block content %}
 <div class="wrapper d-flex flex-column min-vh-100">
   <header class="header header-sticky p-0 mb-4">
     {% include 'includes/navbar.html' %}
-    <div class="container-fluid px-4"></div>
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'staff:employe_list' %}">Employés</a></li>
+          <li class="breadcrumb-item active">
+            <span>{{ employe.nom }} {{ employe.prenom }}</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
   </header>
-
-  <div class="container py-3">
-    <div class="card shadow-sm">
-      <div class="card-header bg-white">
-        <h5>Détails de {{ employe.nom }} {{ employe.prenom }}</h5>
+  
+  <div class="container-fluid px-4 py-3">
+    <!-- En-tête avec actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-1">
+          <i class="fa fa-user me-2 text-primary"></i>
+          Profil de l'Employé
+        </h4>
+        <p class="text-muted mb-0">
+          <small>Matricule: {{ employe.matricule }} | Créé le {{ employe.created_at|date:"d/m/Y à H:i" }}</small>
+        </p>
       </div>
-      <div class="card-body row">
-        <div class="col-md-3 text-center mb-3">
-          {% if employe.photo %}
-            <img src="{{ employe.photo.url }}" class="rounded-circle shadow-sm" width="120" height="120">
-          {% else %}
-            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width:120px;height:120px;font-size:2rem;">
-              {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
+      <div class="action-buttons">
+        <a href="{% url 'staff:employe_list' %}" class="btn btn-secondary">
+          <i class="cil-arrow-left"></i> Retour
+        </a>
+        <button type="button" class="btn btn-warning js-update-entity"
+                data-url="{% url 'staff:employe_update' employe.pk %}">
+          <i class="cil-pencil"></i> Modifier
+        </button>
+        <button type="button" class="btn btn-danger delete-btn"
+                data-url="{% url 'staff:employe_delete' employe.pk %}"
+                data-name="{{ employe.nom }} {{ employe.prenom }}">
+          <i class="cil-trash"></i> Supprimer
+        </button>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Colonne gauche : Informations principales -->
+      <div class="col-lg-4 mb-4">
+        <!-- Carte profil -->
+        <div class="card detail-card h-100">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-user me-2"></i> Informations Personnelles
+            </h5>
+          </div>
+          <div class="card-body text-center">
+            {% if employe.photo %}
+              <img src="{{ employe.photo.url }}" 
+                   alt="{{ employe.prenom }}" 
+                   class="rounded-circle employee-photo-large mb-3">
+            {% else %}
+              <div class="rounded-circle employee-photo-large bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                   style="font-size: 3.5rem;">
+                {{ employe.prenom.0|upper }}{{ employe.nom.0|upper }}
+              </div>
+            {% endif %}
+            
+            <h3 class="mb-1">{{ employe.nom }} {{ employe.prenom }}</h3>
+            <p class="text-muted mb-3">
+              <i class="cil-badge"></i> {{ employe.matricule }}
+            </p>
+
+            <div class="text-start mt-4">
+              <div class="mb-3">
+                <span class="info-label d-block">Date de Naissance</span>
+                <span class="info-value">
+                  {% if employe.date_naissance %}
+                    {{ employe.date_naissance|date:"d F Y" }}
+                    <small class="text-muted">({{ age }} ans)</small>
+                  {% else %}
+                    <span class="text-muted">Non renseignée</span>
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="mb-3">
+                <span class="info-label d-block">Genre</span>
+                <span class="info-value">
+                  {% if employe.sexe == 'M' %}
+                    <i class="cil-user text-primary"></i> Masculin
+                  {% elif employe.sexe == 'F' %}
+                    <i class="cil-user text-danger"></i> Féminin
+                  {% else %}
+                    Non spécifié
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="mb-3">
+                <span class="info-label d-block">Adresse</span>
+                <span class="info-value">{{ employe.adresse|default:"Non renseignée" }}</span>
+              </div>
+
+              <hr>
+
+              <div class="mb-3">
+                <span class="info-label d-block">
+                  <i class="cil-phone"></i> Téléphone
+                </span>
+                <span class="info-value">
+                  {% if employe.phone %}
+                    <a href="tel:{{ employe.phone }}">{{ employe.phone }}</a>
+                  {% else %}
+                    Non renseigné
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="mb-3">
+                <span class="info-label d-block">
+                  <i class="cil-envelope-closed"></i> Email
+                </span>
+                <span class="info-value">
+                  {% if employe.email %}
+                    <a href="mailto:{{ employe.email }}">{{ employe.email }}</a>
+                  {% else %}
+                    Non renseigné
+                  {% endif %}
+                </span>
+              </div>
             </div>
-          {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : Détails professionnels et statistiques -->
+      <div class="col-lg-8">
+        <!-- Statistiques rapides -->
+        <div class="row mb-4">
+          <div class="col-md-4 mb-3">
+            <div class="stat-card">
+              <div class="stat-number">{{ conges_count|default:0 }}</div>
+              <div class="stat-label">Congés pris</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+              <div class="stat-number">{{ plannings_count|default:0 }}</div>
+              <div class="stat-label">Plannings assignés</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+              <div class="stat-number">
+                  {% if employe.date_embauche %}
+                    {{ employe.date_embauche|timesince|split_first }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+
+              <div class="stat-label">Ancienneté</div>
+            </div>
+          </div>
         </div>
 
-        <div class="col-md-9">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><strong>Compte utilisateur:</strong> {{ employe.poste }} - {{ employe.departement|default:"—" }}</li>
-            <li class="list-group-item"><strong>Nom:</strong> {{ employe.nom }}</li>
-            <li class="list-group-item"><strong>Prénom:</strong> {{ employe.prenom }}</li>
-            <li class="list-group-item"><strong>Date de naissance:</strong> {{ employe.date_naissance|date:"d/m/Y"|default:"—" }}</li>
-            <li class="list-group-item"><strong>Lieu de naissance:</strong> {{ employe.lieu_naissance|default:"—" }}</li>
-            <li class="list-group-item"><strong>Nationalité:</strong> {{ employe.nationalite|default:"—" }}</li>
-            <li class="list-group-item"><strong>État civil:</strong> {{ employe.etat_civil|default:"—" }}</li>
-            <li class="list-group-item"><strong>Adresse:</strong> {{ employe.adresse|default:"—" }}</li>
-            <li class="list-group-item"><strong>Ville:</strong> {{ employe.ville|default:"—" }}</li>
-            <li class="list-group-item"><strong>Pays:</strong> {{ employe.pays|default:"—" }}</li>
-            <li class="list-group-item"><strong>Téléphone:</strong> {{ employe.phone|default:"—" }}</li>
-            <li class="list-group-item"><strong>Email:</strong> {{ employe.email|default:"—" }}</li>
-            <li class="list-group-item"><strong>Date d'embauche:</strong> {{ employe.date_embauche|date:"d/m/Y"|default:"—" }}</li>
-            <li class="list-group-item"><strong>Salaire:</strong> {{ employe.salaire|default:"—" }}</li>
-            <li class="list-group-item"><strong>CV:</strong> {% if employe.cv %}<a href="{{ employe.cv.url }}" target="_blank">Voir le fichier</a>{% else %}No file chosen{% endif %}</li>
-            <li class="list-group-item"><strong>Contrat:</strong> {% if employe.contrat %}<a href="{{ employe.contrat.url }}" target="_blank">Voir le fichier</a>{% else %}No file chosen{% endif %}</li>
-            <li class="list-group-item"><strong>Nom contact d'urgence:</strong> {{ employe.nom_contact_urgence|default:"—" }}</li>
-            <li class="list-group-item"><strong>Téléphone contact d'urgence:</strong> {{ employe.phone_contact_urgence|default:"—" }}</li>
-            <li class="list-group-item"><strong>Relation contact d'urgence:</strong> {{ employe.relation_contact_urgence|default:"—" }}</li>
-          </ul>
+        <!-- Informations professionnelles -->
+        <div class="card detail-card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-briefcase me-2"></i> Informations Professionnelles
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Poste</span>
+                <span class="badge bg-primary badge-large">
+                  <i class="cil-briefcase me-1"></i> {{ employe.poste|default:"Non défini" }}
+                </span>
+              </div>
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Département</span>
+                <span class="badge bg-info badge-large">
+                  <i class="cil-building me-1"></i> {{ employe.departement|default:"Non défini" }}
+                </span>
+              </div>
 
-          <div class="mt-3">
-            <a href="{% url 'staff:employe_update' employe.pk %}" class="btn btn-warning"><i class="fa fa-edit"></i> Modifier</a>
-            <a href="{% url 'staff:employe_list' %}" class="btn btn-secondary">Retour</a>
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Date d'Embauche</span>
+                <span class="info-value">
+                  {% if employe.date_embauche %}
+                    <i class="cil-calendar text-success me-2"></i>
+                    {{ employe.date_embauche|date:"d F Y" }}
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Non définie</span>
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="col-md-6 mb-4">
+                <span class="info-label d-block mb-2">Type de Contrat</span>
+                <span class="info-value">
+                  {% if employe.type_contrat %}
+                    <span class="badge bg-success">{{ employe.get_type_contrat_display }}</span>
+                  {% else %}
+                    Non spécifié
+                  {% endif %}
+                </span>
+              </div>
+
+              {% if employe.salaire %}
+              <div class="col-md-12 mb-4">
+                <span class="info-label d-block mb-2">Salaire</span>
+                <div class="alert alert-success mb-0">
+                  <i class="cil-dollar me-2"></i>
+                  <strong>{{ employe.salaire|floatformat:0 }} FCFA</strong>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if employe.notes %}
+              <div class="col-md-12">
+                <span class="info-label d-block mb-2">Notes / Observations</span>
+                <div class="alert alert-light border mb-0">
+                  <i class="cil-notes text-muted me-2"></i>
+                  {{ employe.notes }}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents administratifs -->
+        {% if employe.cv or employe.diplome or employe.contrat %}
+        <div class="card detail-card mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">
+              <i class="cil-folder me-2"></i> Documents Administratifs
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% if employe.cv %}
+              <div class="col-md-4 mb-3">
+                <div class="border rounded p-3 text-center">
+                  <i class="cil-file fa-3x text-primary mb-2"></i>
+                  <h6 class="mb-2">CV</h6>
+                  <a href="{{ employe.cv.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="cil-cloud-download"></i> Télécharger
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if employe.diplome %}
+              <div class="col-md-4 mb-3">
+                <div class="border rounded p-3 text-center">
+                  <i class="cil-education fa-3x text-success mb-2"></i>
+                  <h6 class="mb-2">Diplôme</h6>
+                  <a href="{{ employe.diplome.url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                    <i class="cil-cloud-download"></i> Télécharger
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if employe.contrat %}
+              <div class="col-md-4 mb-3">
+                <div class="border rounded p-3 text-center">
+                  <i class="cil-file-contract fa-3x text-warning mb-2"></i>
+                  <h6 class="mb-2">Contrat</h6>
+                  <a href="{{ employe.contrat.url }}" target="_blank" class="btn btn-sm btn-outline-warning">
+                    <i class="cil-cloud-download"></i> Télécharger
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Activités récentes -->
+        <div class="row">
+          <!-- Derniers congés -->
+          <div class="col-md-6 mb-4">
+            <div class="card detail-card h-100">
+              <div class="card-header bg-secondary text-white">
+                <h6 class="card-title mb-0">
+                  <i class="cil-calendar me-2"></i> Derniers Congés
+                </h6>
+              </div>
+              <div class="card-body">
+                {% if recent_conges %}
+                  <div class="list-group list-group-flush">
+                    {% for conge in recent_conges %}
+                    <div class="list-group-item px-0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <small class="text-muted">{{ conge.date_debut|date:"d/m/Y" }}</small>
+                          <br>
+                          <strong>{{ conge.get_type_conge_display }}</strong>
+                        </div>
+                        {% if conge.statut == 'approuve' %}
+                          <span class="badge bg-success">Approuvé</span>
+                        {% elif conge.statut == 'en_attente' %}
+                          <span class="badge bg-warning">En attente</span>
+                        {% else %}
+                          <span class="badge bg-danger">Refusé</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <a href="{% url 'staff:conge_list' %}?search={{ employe.matricule }}" 
+                     class="btn btn-sm btn-outline-primary mt-3 w-100">
+                    Voir tous les congés
+                  </a>
+                {% else %}
+                  <p class="text-muted text-center mb-0">Aucun congé enregistré</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Derniers plannings -->
+          <div class="col-md-6 mb-4">
+            <div class="card detail-card h-100">
+              <div class="card-header bg-secondary text-white">
+                <h6 class="card-title mb-0">
+                  <i class="cil-clock me-2"></i> Derniers Plannings
+                </h6>
+              </div>
+              <div class="card-body">
+                {% if recent_plannings %}
+                  <div class="list-group list-group-flush">
+                    {% for planning in recent_plannings %}
+                    <div class="list-group-item px-0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <small class="text-muted">{{ planning.date|date:"d/m/Y" }}</small>
+                          <br>
+                          <strong>{{ planning.get_periode_display }}</strong>
+                        </div>
+                        <span class="badge bg-primary">{{ planning.heure_debut|time:"H:i" }}</span>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <a href="{% url 'staff:planning_list' %}?matricule={{ employe.matricule }}" 
+                     class="btn btn-sm btn-outline-primary mt-3 w-100">
+                    Voir tous les plannings
+                  </a>
+                {% else %}
+                  <p class="text-muted text-center mb-0">Aucun planning assigné</p>
+                {% endif %}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Modal pour update -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+      </div>
+    </div>
   </div>
 </div>
-{% endblock %}
+
+{% csrf_token %}
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const deleteBtn = document.querySelector(".delete-btn");
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            
+            const url = deleteBtn.dataset.url;
+            const nom = deleteBtn.dataset.name;
+            
+            Swal.fire({
+                title: `Supprimer ${nom} ?`,
+                text: "Cette action supprimera également tous les congés et plannings associés !",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                reverseButtons: true
+            }).then(result => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Suppression en cours...',
+                        html: 'Veuillez patienter',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                        },
+                    })
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if(data.form_is_valid || data.success){
+                            Swal.fire({
+                                icon: "success",
+                                title: "Supprimé !",
+                                text: "L'employé a été supprimé avec succès.",
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.href = "{% url 'staff:employe_list' %}";
+                            });
+                        } else {
+                            Swal.fire("Erreur !", "Impossible de supprimer.", "error");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Erreur:", error);
+                        Swal.fire("Erreur !", "Une erreur est survenue.", "error");
+                    });
+                }
+            });
+        });
+    }
+    
+    // ========================================
+    // MODAL AJAX (Update uniquement)
+    // ========================================
+    var idModalEntity = "#modal-entity";
+    var clUpdateEntity = ".js-update-entity";
+    var clUpdateForm = ".js-entity-update-form";
+
+    function loadForm() {
+        var btn = $(this);
+        
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: 'GET',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Chargement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                Swal.close();
+                $(idModalEntity + " .modal-content").html(data.html_form);
+                $(idModalEntity).modal('show');
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Impossible de charger le formulaire.",
+                });
+            }
+        });
+    }
+
+    function saveForm() {
+        var form = $(this);
+        
+        $.ajax({
+            url: form.attr("action"),
+            data: form.serialize(),
+            type: 'POST',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Enregistrement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                if (data.form_is_valid === true || data.success === true) {
+                    $(idModalEntity).modal('hide');
+                    
+                    Swal.fire({
+                        icon: "success",
+                        title: "Succès !",
+                        text: "L'employé a été modifié avec succès.",
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.close();
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Erreur lors de la sauvegarde.",
+                });
+            }
+        });
+        return false;
+    }
+
+    $(document).on("click", clUpdateEntity, loadForm);
+    $(idModalEntity).on("submit", clUpdateForm, saveForm);
+});
+</script>
+
+{% endblock content %}

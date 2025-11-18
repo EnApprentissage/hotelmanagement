@@ -1,10 +1,10 @@
 <!-- Modal pour modification d'un congé -->
-<form method="post" action="{% url 'staff:conge_update' object.pk %}" class="js-entity-update-form">
+<form method="post" action="{% url 'staff:conge_update' form.instance.pk %}" class="js-entity-update-form">
     {% csrf_token %}
     
     <div class="modal-header bg-warning text-white">
         <h5 class="modal-title">
-            <i class="cil-pencil"></i> Modifier le Congé
+            <i class="fas fa-edit"></i> Mettre à jour le Congé
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
@@ -17,8 +17,8 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="cil-x"></i> Annuler
         </button>
-        <button type="submit" class="btn btn-warning text-white">
-            <i class="cil-check"></i> Enregistrer les modifications
+        <button type="submit" class="btn btn-warning">
+            <i class="cil-check"></i> Mettre à jour
         </button>
     </div>
 </form>

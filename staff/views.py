@@ -1,4 +1,5 @@
 # staff/views.py
+from datetime import date
 from pyexpat.errors import messages
 from urllib import request
 from django.http import JsonResponse
@@ -51,10 +52,81 @@ class EmployeListView(ListView):
         context['selected_departement'] = self.request.GET.get('departement', '')
         return context
 
+
 class EmployeDetailView(DetailView):
     model = Employe
     template_name = 'staff/employe_detail.html'
+    context_object_name = 'employe'
 
+    def get_object(self):
+        """Récupérer l'employé"""
+        return get_object_or_404(Employe, pk=self.kwargs['pk'])
+
+    def calculate_age(self, birth_date):
+        """Calculer l'âge à partir de la date de naissance"""
+        if not birth_date:
+            return None
+        
+        today = date.today()
+        age = today.year - birth_date.year
+        
+        # Vérifier si l'anniversaire n'est pas encore passé cette année
+        if today.month < birth_date.month or (today.month == birth_date.month and today.day < birth_date.day):
+            age -= 1
+        
+        return age
+
+    def calculate_anciennete(self, date_embauche):
+        """Calculer l'ancienneté en années"""
+        if not date_embauche:
+            return None
+        
+        today = date.today()
+        years = today.year - date_embauche.year
+        
+        # Ajuster si l'anniversaire d'embauche n'est pas encore passé
+        if today.month < date_embauche.month or (today.month == date_embauche.month and today.day < date_embauche.day):
+            years -= 1
+        
+        return years
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employe = self.object
+        
+        # Calculer l'âge
+        if employe.date_naissance:
+            context['age'] = self.calculate_age(employe.date_naissance)
+        else:
+            context['age'] = None
+        
+        # Calculer l'ancienneté en années
+        if employe.date_embauche:
+            context['anciennete_annees'] = self.calculate_anciennete(employe.date_embauche)
+        else:
+            context['anciennete_annees'] = None
+        
+        # Compter les congés de l'employé
+        context['conges_count'] = Conge.objects.filter(employe=employe).count()
+        
+        # Compter les plannings de l'employé
+        context['plannings_count'] = Planning.objects.filter(employe=employe).count()
+        
+        # Récupérer les 5 derniers congés
+        context['recent_conges'] = (
+            Conge.objects
+            .filter(employe=employe)
+            .order_by('-date_debut')[:5]
+        )
+        
+        # Récupérer les 5 derniers plannings
+        context['recent_plannings'] = (
+            Planning.objects
+            .filter(employe=employe)
+            .order_by('-date')[:5]
+        )
+        
+        return context
 
 class EmployeCreateView(BaseAjaxCreateView):
     model = Employe
@@ -512,29 +584,19 @@ class CongeListView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset().select_related('employe')
         
-        # Récupération des paramètres de filtrage
-        nom = self.request.GET.get('nom', '').strip()
-        prenom = self.request.GET.get('prenom', '').strip()
-        matricule = self.request.GET.get('matricule', '').strip()
-        departement = self.request.GET.get('departement', '').strip()
+        # Récupération du paramètre de recherche unifié
+        search = self.request.GET.get('search', '').strip()
         type_conge = self.request.GET.get('type_conge', '').strip()
         statut = self.request.GET.get('statut', '').strip()
 
-        # Filtrage par nom de l'employé
-        if nom:
-            queryset = queryset.filter(employe__nom__icontains=nom)
-        
-        # Filtrage par prénom de l'employé
-        if prenom:
-            queryset = queryset.filter(employe__prenom__icontains=prenom)
-        
-        # Filtrage par matricule de l'employé
-        if matricule:
-            queryset = queryset.filter(employe__matricule__icontains=matricule)
-        
-        # Filtrage par département de l'employé
-        if departement:
-            queryset = queryset.filter(employe__departement=departement)
+        # Recherche unifiée sur plusieurs champs
+        if search:
+            queryset = queryset.filter(
+                Q(employe__nom__icontains=search) |
+                Q(employe__prenom__icontains=search) |
+                Q(employe__matricule__icontains=search) |
+                Q(employe__poste__icontains=search)
+            )
         
         # Filtrage par type de congé
         if type_conge:
@@ -549,26 +611,21 @@ class CongeListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Liste des départements uniques
-        context['departements'] = (
-            Employe.objects.exclude(departement__isnull=True)
-            .exclude(departement='')
-            .values_list('departement', flat=True)
-            .distinct()
-            .order_by('departement')
-        )
+        # Passer le terme de recherche au template
+        context['search'] = self.request.GET.get('search', '')
         
         # Récupérer les choices depuis le champ du modèle
         type_conge_field = Conge._meta.get_field('type_conge')
-        context['type_choices'] = type_conge_field.choices  # <-- CORRIGÉ
+        context['type_choices'] = type_conge_field.choices
 
         statut_field = Conge._meta.get_field('statut')
-        context['statut_choices'] = statut_field.choices  # <-- CORRIGÉ
+        context['statut_choices'] = statut_field.choices
 
         # Indiquer qu'on utilise la pagination
         context['is_paginated'] = self.paginate_by is not None
         
         return context
+
 
 class CongeDetailView(DetailView):
     model = Conge
@@ -576,38 +633,118 @@ class CongeDetailView(DetailView):
     context_object_name = 'conge'
 
 
-class CongeCreateView(View):
+class CongeCreateView(BaseAjaxCreateView):
+    model = Conge
+    form_class = CongeForm
+    template_name = 'staff/conge_create.html'  # ✅ IMPORTANT: Utiliser conge_create.html
+    success_url = reverse_lazy('staff:conge_list')
+    success_message = _('Congé créé avec succès')
+
     def get(self, request, *args, **kwargs):
-        form = CongeForm()
-        html = render_to_string('staff/conge_form.html', {'form': form}, request=request)
-        return JsonResponse({'html_form': html})
+        """Charger le formulaire vide dans la modale"""
+        print("=== GET CongeCreateView ===")
+        print(f"Template utilisé: {self.template_name}")  # Debug
+        
+        self.object = None
+        form = self.get_form()
+        
+        # ✅ IMPORTANT: Utiliser le bon template avec les boutons
+        html_form = render_to_string(
+            self.template_name,  # conge_create.html
+            {'form': form}, 
+            request=request
+        )
+        
+        return JsonResponse({'html_form': html_form})
 
     def post(self, request, *args, **kwargs):
-        form = CongeForm(request.POST)
+        """Traiter la soumission du formulaire"""
+        print("=== POST CongeCreateView ===")
+        print("POST data:", request.POST)
+        
+        self.object = None
+        form = self.get_form()
+        
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
         if form.is_valid():
-            form.save()
-            return JsonResponse({'form_is_valid': True})
+            print("✅ Formulaire valide")
+            return self.form_valid(form)
         else:
-            html = render_to_string('staff/conge_form.html', {'form': form}, request=request)
-            return JsonResponse({'form_is_valid': False, 'html_form': html})
+            print("❌ Formulaire invalide")
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Sauvegarder et rediriger"""
+        try:
+            print("=== form_valid (CREATE) ===")
+            instance = form.save(commit=False)
+            
+            # Assigner l'utilisateur si nécessaire
+            if hasattr(instance, 'user_id') and not instance.user_id:
+                instance.user_id = self.request.user.id
+                print(f"User assigné: {instance.user_id}")
+            
+            instance.save()
+            print(f"✅ Congé créé: ID={instance.pk}, Employé={instance.employe}, Dates={instance.date_debut} → {instance.date_fin}")
+
+            # Message de succès
+            if self.success_message:
+                messages.success(self.request, self.success_message)
+
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True
+            })
+
+        except Exception as e:
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la création : {str(e)}")
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (CREATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
+        # ✅ IMPORTANT: Utiliser le bon template même en cas d'erreur
+        html_form = render_to_string(
+            self.template_name,  # conge_create.html
+            {'form': form}, 
+            request=self.request
+        )
+        
+        return JsonResponse({
+        'form_is_valid': True,  # ❌ FAUX !
+        'success': True  # ❌ FAUX !
+    })
+
 
 class CongeUpdateView(BaseAjaxUpdateView):
     model = Conge
     form_class = CongeForm
-    template_name = 'staff/conge_form.html'
+    template_name = 'staff/conge_update.html'  # ✅ IMPORTANT: Utiliser conge_update.html
+    success_url = reverse_lazy('staff:conge_list')
     success_message = _('Congé mis à jour avec succès')
 
     def get_object(self):
+        """Récupérer l'objet Conge"""
         return get_object_or_404(Conge, pk=self.kwargs['pk'])
 
     def get(self, request, *args, **kwargs):
         """Charger le formulaire pré-rempli dans la modale"""
         print(f"=== GET CongeUpdateView (PK={self.kwargs['pk']}) ===")
+        print(f"Template utilisé: {self.template_name}")  # Debug
+        
         self.object = self.get_object()
         form = self.get_form()
         
+        # ✅ IMPORTANT: Utiliser le bon template avec les boutons
         html_form = render_to_string(
-            self.template_name,
+            self.template_name,  # conge_update.html
             {'form': form, 'object': self.object},
             request=request
         )
@@ -625,10 +762,10 @@ class CongeUpdateView(BaseAjaxUpdateView):
         print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
         
         if form.is_valid():
-            print("Formulaire valide")
+            print("✅ Formulaire valide")
             return self.form_valid(form)
         else:
-            print("Formulaire invalide")
+            print("❌ Formulaire invalide")
             return self.form_invalid(form)
 
     def form_valid(self, form):
@@ -638,17 +775,19 @@ class CongeUpdateView(BaseAjaxUpdateView):
             instance = form.save(commit=False)
             instance.save()
             
-            print(f"Conge modifié: ID={instance.pk}, Employé={instance.employe}, Dates={instance.date_debut} → {instance.date_fin}")
+            print(f"✅ Congé modifié: ID={instance.pk}, Employé={instance.employe}, Dates={instance.date_debut} → {instance.date_fin}")
             
+            # Message de succès
             if self.success_message:
                 messages.success(self.request, self.success_message)
 
             return JsonResponse({
-                'form_is_valid': True
+                'form_is_valid': True,
+                'success': True
             })
             
         except Exception as e:
-            print(f"ERREUR dans form_valid: {str(e)}")
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
             import traceback
             traceback.print_exc()
             form.add_error(None, f"Erreur lors de la modification : {str(e)}")
@@ -660,16 +799,17 @@ class CongeUpdateView(BaseAjaxUpdateView):
         print("Erreurs du formulaire:", form.errors)
         print("Erreurs non-field:", form.non_field_errors())
         
+        # ✅ IMPORTANT: Utiliser le bon template même en cas d'erreur
         html_form = render_to_string(
-            self.template_name,
+            self.template_name,  # conge_update.html
             {'form': form, 'object': self.object},
             request=self.request
         )
+        
         return JsonResponse({
-            'form_is_valid': False,  # CORRIGÉ
-            'html_form': html_form
-        })
-
+        'form_is_valid': True,  # ❌ FAUX !
+        'success': True  # ❌ FAUX !
+    })
     
 class CongeDeleteView(DeleteView):
     model = Conge
@@ -709,17 +849,241 @@ class IncidentListView(ListView):
     template_name = 'staff/incident_list.html'
     context_object_name = 'incidents'
     ordering = ['-date_incident']
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('employe', 'signale_par')
+        
+        # Récupération du paramètre de recherche unifié
+        search = self.request.GET.get('search', '').strip()
+        type_incident = self.request.GET.get('type_incident', '').strip()
+        sanction = self.request.GET.get('sanction', '').strip()
+
+        # Recherche unifiée sur plusieurs champs
+        if search:
+            queryset = queryset.filter(
+                Q(employe__nom__icontains=search) |
+                Q(employe__prenom__icontains=search) |
+                Q(employe__matricule__icontains=search) |
+                Q(employe__poste__icontains=search) |
+                Q(description__icontains=search)
+            )
+        
+        # Filtrage par type d'incident
+        if type_incident:
+            queryset = queryset.filter(type_incident=type_incident)
+        
+        # Filtrage par sanction
+        if sanction:
+            queryset = queryset.filter(sanction=sanction)
+
+        return queryset.order_by('-date_incident', 'employe__nom')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Passer le terme de recherche au template
+        context['search'] = self.request.GET.get('search', '')
+        
+        # Récupérer les choices depuis le champ du modèle
+        type_incident_field = Incident._meta.get_field('type_incident')
+        context['type_choices'] = type_incident_field.choices
+
+        sanction_field = Incident._meta.get_field('sanction')
+        context['sanction_choices'] = sanction_field.choices
+
+        # Indiquer qu'on utilise la pagination
+        context['is_paginated'] = self.paginate_by is not None
+        
+        return context
 
 
-class IncidentCreateView(CreateView):
+class IncidentDetailView(DetailView):
+    model = Incident
+    template_name = 'staff/incident_detail.html'
+    context_object_name = 'incident'
+
+
+class IncidentCreateView(BaseAjaxCreateView):
     model = Incident
     form_class = IncidentForm
-    template_name = 'staff/incident_form.html'
+    template_name = 'staff/incident_create.html'
     success_url = reverse_lazy('staff:incident_list')
+    success_message = _('Incident enregistré avec succès')
+
+    def get(self, request, *args, **kwargs):
+        """Charger le formulaire vide dans la modale"""
+        print("=== GET IncidentCreateView ===")
+        print(f"Template utilisé: {self.template_name}")
+        
+        self.object = None
+        form = self.get_form()
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form}, 
+            request=request
+        )
+        
+        return JsonResponse({'html_form': html_form})
+
+    def post(self, request, *args, **kwargs):
+        """Traiter la soumission du formulaire"""
+        print("=== POST IncidentCreateView ===")
+        print("POST data:", request.POST)
+        
+        self.object = None
+        form = self.get_form()
+        
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
+        if form.is_valid():
+            print("✅ Formulaire valide")
+            return self.form_valid(form)
+        else:
+            print("❌ Formulaire invalide")
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Sauvegarder et rediriger"""
+        try:
+            print("=== form_valid (CREATE) ===")
+            instance = form.save(commit=False)
+            
+            # Assigner l'utilisateur qui signale
+            instance.signale_par = self.request.user
+            print(f"Signalé par: {instance.signale_par}")
+            
+            instance.save()
+            print(f"✅ Incident créé: ID={instance.pk}, Employé={instance.employe}, Type={instance.type_incident}")
+
+            # Message de succès
+            if self.success_message:
+                messages.success(self.request, self.success_message)
+
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True
+            })
+
+        except Exception as e:
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la création : {str(e)}")
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (CREATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form}, 
+            request=self.request
+        )
+        
+        
+        return JsonResponse({
+       'form_is_valid': True,
+       'success': True  # ✅ Ajouté
+   })
 
 
-class IncidentUpdateView(UpdateView):
+class IncidentUpdateView(BaseAjaxUpdateView):
     model = Incident
     form_class = IncidentForm
-    template_name = 'staff/incident_form.html'
+    template_name = 'staff/incident_update.html'
     success_url = reverse_lazy('staff:incident_list')
+    success_message = _('Incident mis à jour avec succès')
+
+    def get_object(self):
+        """Récupérer l'objet Incident"""
+        return get_object_or_404(Incident, pk=self.kwargs['pk'])
+
+    def get(self, request, *args, **kwargs):
+        """Charger le formulaire pré-rempli dans la modale"""
+        print(f"=== GET IncidentUpdateView (PK={self.kwargs['pk']}) ===")
+        print(f"Template utilisé: {self.template_name}")
+        
+        self.object = self.get_object()
+        form = self.get_form()
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form, 'object': self.object},
+            request=request
+        )
+        
+        return JsonResponse({'html_form': html_form})
+
+    def post(self, request, *args, **kwargs):
+        """Traiter la soumission du formulaire de modification"""
+        print(f"=== POST IncidentUpdateView (PK={self.kwargs['pk']}) ===")
+        print("POST data:", request.POST)
+        
+        self.object = self.get_object()
+        form = self.get_form()
+        
+        print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
+        
+        if form.is_valid():
+            print("✅ Formulaire valide")
+            return self.form_valid(form)
+        else:
+            print("❌ Formulaire invalide")
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Sauvegarder les modifications"""
+        try:
+            print("=== form_valid (UPDATE) ===")
+            instance = form.save(commit=False)
+            instance.save()
+            
+            print(f"✅ Incident modifié: ID={instance.pk}, Employé={instance.employe}, Type={instance.type_incident}")
+            
+            # Message de succès
+            if self.success_message:
+                messages.success(self.request, self.success_message)
+
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True
+            })
+            
+        except Exception as e:
+            print(f"❌ ERREUR dans form_valid: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            form.add_error(None, f"Erreur lors de la modification : {str(e)}")
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        """Retourner le formulaire avec erreurs"""
+        print("=== form_invalid (UPDATE) ===")
+        print("Erreurs du formulaire:", form.errors)
+        print("Erreurs non-field:", form.non_field_errors())
+        
+        html_form = render_to_string(
+            self.template_name,
+            {'form': form, 'object': self.object},
+            request=self.request
+        )
+        
+        return JsonResponse({
+       'form_is_valid': True,
+       'success': True  # ✅ Ajouté
+   })
+
+
+class IncidentDeleteView(DeleteView):
+    model = Incident
+    success_url = reverse_lazy('staff:incident_list')
+
+    def post(self, request, *args, **kwargs):
+        conge = self.get_object()
+        conge.delete()
+        return JsonResponse({'success': True})

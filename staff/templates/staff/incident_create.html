@@ -1,16 +1,16 @@
-<!-- Modal pour création d'un congé -->
-<form method="post" action="{% url 'staff:conge_create' %}" class="js-entity-create-form">
+<!-- Modal pour création d'un incident -->
+<form method="post" action="{% url 'staff:incident_create' %}" class="js-entity-create-form">
     {% csrf_token %}
     
     <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
-            <i class="cil-calendar-plus"></i> Créer un Nouveau Congé
+            <i class="cil-warning"></i> Déclarer un Incident
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
 
     <div class="modal-body">
-        {% include 'staff/conge_form.html' %}
+        {% include 'staff/incident_form.html' %}
     </div>
 
     <div class="modal-footer">
@@ -18,7 +18,7 @@
         <i class="cil-x"></i> Annuler
     </button>
     <button type="submit" class="btn btn-primary">
-        <i class="cil-check"></i> Créer le Congé
+        <i class="cil-check"></i> Signaler un Incident
     </button>
 </div>
 </form>

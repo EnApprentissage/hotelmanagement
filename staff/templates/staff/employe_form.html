@@ -35,6 +35,14 @@
         </div>
         
         <div class="mb-3">
+            {{ form.sexe.label_tag }}
+            {{ form.sexe }}
+            {% if form.sexe.errors %}
+                <div class="text-danger">{{ form.sexe.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
             {{ form.nationalite.label_tag }}
             {{ form.nationalite }}
             {% if form.nationalite.errors %}

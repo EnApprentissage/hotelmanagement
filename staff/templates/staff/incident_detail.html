@@ -1,0 +1,148 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Incident - {{ object.employe.matricule }}{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Incidents & Sanctions</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container-fluid px-4 py-4">
+
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-0 text-danger">
+          Incident disciplinaire
+        </h4>
+        <small class="text-muted">
+          <a href="{% url 'staff:incident_list' %}" class="text-muted">Incidents</a>
+          <span class="mx-1">›</span>
+          {{ object.employe.matricule }}
+        </small>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'staff:incident_list' %}" class="btn btn-outline-secondary btn-sm">Retour</a>
+        <a href="{% url 'staff:incident_update' object.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+        <button type="button" class="btn btn-danger btn-sm delete-btn"
+                data-url="{% url 'staff:incident_delete' object.pk %}"
+                data-name="{{ object.employe }}">
+          Supprimer
+        </button>
+      </div>
+    </div>
+
+    <!-- Carte COMPACTE -->
+    <div class="card border-0 shadow-sm text-white" style="max-width: 900px; margin: 0 auto;">
+      <div class="card-header bg-primary py-3">
+        <h6 class="mb-0">
+          {{ object.employe.nom|upper }} {{ object.employe.prenom }}
+          <span class="text-white-50 ms-2">• {{ object.employe.matricule }}</span>
+        </h6>
+      </div>
+
+      <div class="card-body bg-dark p-4">
+
+        <!-- Ligne 1 : Date + Type -->
+        <div class="row g-4 mb-3">
+          <div class="col-md-5">
+            <div class="text-muted small mb-1">Date de l'incident</div>
+            <div class="text-danger fw-bold" style="font-size: 1.1rem;">
+              {{ object.date_incident|date:"d F Y" }}
+            </div>
+          </div>
+          <div class="col-md-7 text-md-end">
+            <div class="text-muted small mb-1">Type</div>
+            <span class="badge bg-danger px-3 py-2" style="font-size: 0.9rem;">
+              {{ object.get_type_incident_display }}
+            </span>
+          </div>
+        </div>
+
+        <hr class="border-secondary opacity-50 my-4">
+
+        <!-- Description -->
+        <div class="mb-3">
+          <div class="text-muted small mb-2">Description des faits</div>
+          <div class="bg-white text-dark p-3 rounded" style="font-size: 0.95rem; line-height: 1.5; min-height: 90px;">
+            {% if object.description %}
+              {{ object.description|linebreaks }}
+            {% else %}
+              <em class="text-muted">Aucune description.</em>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Sanction -->
+        {% if object.sanction %}
+          <hr class="border-secondary opacity-50 my-4">
+          <div class="row g-4">
+            <div class="col-md-7">
+              <div class="text-muted small mb-1">Sanction</div>
+              <span class="badge bg-warning text-dark px-4 py-2">
+                {{ object.get_sanction_display }}
+              </span>
+            </div>
+            <div class="col-md-5 text-md-end">
+              <div class="text-muted small mb-1">Date sanction</div>
+              <div class="text-white fw-medium">
+                {{ object.date_sanction|date:"d F Y"|default:"—" }}
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-info small mt-3">
+            Aucune sanction appliquée
+          </div>
+        {% endif %}
+
+        <!-- Signalé par -->
+        {% if object.signale_par %}
+          <div class="text-muted small mt-4 pt-3 border-top border-secondary opacity-50">
+            Signalé par <strong class="text-white">{{ object.signale_par.get_full_name|default:object.signale_par.username }}</strong>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.querySelectorAll(".delete-btn").forEach(btn => {
+  btn.onclick = function() {
+    const name = this.dataset.name;
+    const url = this.dataset.url;
+    Swal.fire({
+      title: "Supprimer ?",
+      text: name + " • Action irréversible",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Supprimer",
+      cancelButtonText: "Annuler"
+    }).then(r => {
+      if (r.isConfirmed) {
+        fetch(url, {method:"POST", headers:{"X-CSRFToken":"{{ csrf_token }}"}})
+          .then(res => res.json())
+          .then(d => { if(d.success) location.href="{% url 'staff:incident_list' %}"; });
+      }
+    });
+  };
+});
+</script>
+
+{% endblock %}

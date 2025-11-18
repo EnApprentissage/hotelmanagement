@@ -16,6 +16,11 @@ from .views import (
     PlanningListView,
     PlanningUpdateView,
     PlanningDetailView,
+    IncidentListView,
+    IncidentDetailView,
+    IncidentCreateView,
+    IncidentUpdateView,
+    IncidentDeleteView,
 )
 
 app_name = 'staff'
@@ -40,4 +45,11 @@ urlpatterns = [
     path('conges/create/', CongeCreateView.as_view(), name='conge_create'),
     path('conges/<int:pk>/update/', CongeUpdateView.as_view(), name='conge_update'),
     path('conges/<int:pk>/delete/', CongeDeleteView.as_view(), name='conge_delete'),
+
+    # Incident URLs
+    path('incidents/', IncidentListView.as_view(), name='incident_list'),
+    path('incidents/<int:pk>/', IncidentDetailView.as_view(), name='incident_detail'),
+    path('incidents/create/', IncidentCreateView.as_view(), name='incident_create'),
+    path('incidents/<int:pk>/update/', IncidentUpdateView.as_view(), name='incident_update'),
+    path('incidents/<int:pk>/delete/', IncidentDeleteView.as_view(), name='incident_delete'),
 ]

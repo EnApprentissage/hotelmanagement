@@ -1,0 +1,410 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Incidents{% endblock title %}
+
+{% block extra_head %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock extra_head %}
+
+{% block extra_css %}
+<style>
+  .badge-incident {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    border-radius: 0.4rem;
+  }
+  .employee-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Incidents & Sanctions</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container-fluid px-4 py-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0">
+        <i class="fa fa-exclamation-triangle me-2 text-danger"></i> Liste des Incidents & Sanctions
+      </h5>
+      <button type="button" class="btn btn-sm btn-danger js-create-entity " title="Ajouter nouvel incident"
+              data-url="{% url 'staff:incident_create' %}">
+        <i class="cil-plus"></i> 
+      </button>
+    </div>
+
+    <!-- Filtres avec recherche unifiée -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-md-6">
+            <input type="text" name="search" class="form-control form-control-sm"
+                   placeholder="Rechercher (nom, matricule, poste, description...)"
+                   value="{{ search }}">
+          </div>
+          <div class="col-md-2">
+            <select name="type_incident" class="form-select form-select-sm">
+              <option value="">— Tous les types —</option>
+              {% for key, value in type_choices %}
+                <option value="{{ key }}" {% if key == request.GET.type_incident %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select name="sanction" class="form-select form-select-sm">
+              <option value="">— Toutes les sanctions —</option>
+              {% for key, value in sanction_choices %}
+                <option value="{{ key }}" {% if key == request.GET.sanction %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 text-end">
+            <button type="submit" class="btn btn-sm btn-primary" title="Filtrer" title="Rechercher">
+              <i class="cil-magnifying-glass"></i>
+            </button>
+            <a href="{% url 'staff:incident_list' %}" class="btn btn-sm btn-secondary" title="Réinitialiser">
+              <i class="cil-loop-circular"></i>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tableau -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2 bg-danger text-white">
+        <i class="icon icon-xxl cil-warning me-2"></i>
+        <h5 class="card-title mb-0">Incidents & Sanctions</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle" id="incident-table">
+            <thead>
+              <tr>
+                <th class="text-center">No</th>
+                <th class="text-center" width="60">Photo</th>
+                <th>Employé</th>
+                <th>Poste</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Sanction</th>
+                <th>Signalé par</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for incident in incidents %}
+              <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="text-center">
+                  {% if incident.employe.photo %}
+                    <img src="{{ incident.employe.photo.url }}" alt="{{ incident.employe.prenom }}" class="rounded-circle employee-avatar">
+                  {% else %}
+                    <div class="rounded-circle bg-light text-dark d-inline-flex align-items-center justify-content-center"
+                         style="width:40px;height:40px;font-size:0.9rem;">
+                      {{ incident.employe.prenom.0|upper }}{{ incident.employe.nom.0|upper }}
+                    </div>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="fw-medium">{{ incident.employe.nom }} {{ incident.employe.prenom }}</div>
+                  <small class="text-muted fw-bold">{{ incident.employe.matricule }}</small>
+                </td>
+                <td>{{ incident.employe.poste|default:"—" }}</td>
+                <td class="text-nowrap">{{ incident.date_incident|date:"d/m/Y" }}</td>
+                <td>
+                  {% if incident.type_incident == 'retard' %}
+                    <span class="badge bg-warning text-dark badge-incident">{{ incident.get_type_incident_display }}</span>
+                  {% elif incident.type_incident == 'absence' %}
+                    <span class="badge bg-danger badge-incident">{{ incident.get_type_incident_display }}</span>
+                  {% elif incident.type_incident == 'comportement' %}
+                    <span class="badge bg-dark badge-incident">{{ incident.get_type_incident_display }}</span>
+                  {% elif incident.type_incident == 'performance' %}
+                    <span class="badge bg-secondary badge-incident">{{ incident.get_type_incident_display }}</span>
+                  {% else %}
+                    <span class="badge bg-info badge-incident">{{ incident.get_type_incident_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="small text-muted" title="{{ incident.description }}">
+                  {{ incident.description|truncatechars:40 }}
+                </td>
+                <td>
+                  {% if incident.sanction %}
+                    <span class="badge bg-danger badge-incident">{{ incident.get_sanction_display }}</span>
+                  {% else %}
+                    <span class="text-muted small">Aucune</span>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if incident.signale_par %}
+                    {{ incident.signale_par.get_full_name|default:incident.signale_par.username }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <a href="{% url 'staff:incident_detail' incident.pk %}" class="text-success" title="Voir détail">
+                    <i class="icon cil-folder-open"></i></a>
+                  <button type="button" class="btn btn-sm text-warning js-update-entity" 
+                          title="Modifier"
+                          data-url="{% url 'staff:incident_update' incident.pk %}">
+                    <i class="icon cil-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm text-danger delete-btn"
+                          title="Supprimer"
+                          data-url="{% url 'staff:incident_delete' incident.pk %}"
+                          data-name="{{ incident.employe.nom }} {{ incident.employe.prenom }} - {{ incident.get_type_incident_display }}">
+                    <i class="icon cil-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="10" class="text-center py-5 text-muted">
+                  <i class="fa fa-check-circle fa-3x mb-3 opacity-25 text-success"></i>
+                  <p>Aucun incident enregistré</p>
+                  <button type="button" class="btn btn-sm btn-danger js-create-entity"
+                          data-url="{% url 'staff:incident_create' %}">
+                    <i class="fa fa-plus"></i> Signaler un incident
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination avec conservation des filtres -->
+    {% if is_paginated %}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if request.GET.type_incident %}&type_incident={{ request.GET.type_incident }}{% endif %}{% if request.GET.sanction %}&sanction={{ request.GET.sanction }}{% endif %}">«</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.type_incident %}&type_incident={{ request.GET.type_incident }}{% endif %}{% if request.GET.sanction %}&sanction={{ request.GET.sanction }}{% endif %}">‹</a>
+          </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+          <span class="page-link">
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+        </li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.type_incident %}&type_incident={{ request.GET.type_incident }}{% endif %}{% if request.GET.sanction %}&sanction={{ request.GET.sanction }}{% endif %}">›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.type_incident %}&type_incident={{ request.GET.type_incident }}{% endif %}{% if request.GET.sanction %}&sanction={{ request.GET.sanction }}{% endif %}">»</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const attachDeleteListeners = () => {
+        const deleteButtons = document.querySelectorAll(".delete-btn");
+        
+        deleteButtons.forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const url = newBtn.dataset.url;
+                const nom = newBtn.dataset.name;
+                
+                Swal.fire({
+                    title: `Supprimer l'incident de ${nom} ?`,
+                    text: "Cette action est irréversible !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                    reverseButtons: true
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Suppression en cours...',
+                            html: 'Veuillez patienter',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                            },
+                        })
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if(data.form_is_valid || data.success){
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Supprimé !",
+                                    text: "L'incident a été supprimé avec succès.",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire("Erreur !", "Impossible de supprimer.", "error");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Erreur:", error);
+                            Swal.fire("Erreur !", "Une erreur est survenue.", "error");
+                        });
+                    }
+                });
+            });
+        });
+    };
+    
+    attachDeleteListeners();
+    
+    // ========================================
+    // MODAL AJAX (Create/Update)
+    // ========================================
+    var idModalEntity = "#modal-entity";
+    var clCreateEntity = ".js-create-entity";
+    var clUpdateEntity = ".js-update-entity";
+    var clCreateForm = ".js-entity-create-form";
+    var clUpdateForm = ".js-entity-update-form";
+
+    function loadForm() {
+        var btn = $(this);
+        
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: 'GET',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Chargement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                Swal.close();
+                $(idModalEntity + " .modal-content").html(data.html_form);
+                $(idModalEntity).modal('show');
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Impossible de charger le formulaire.",
+                });
+            }
+        });
+    }
+
+    function saveForm() {
+        var form = $(this);
+        
+        $.ajax({
+            url: form.attr("action"),
+            data: form.serialize(),
+            type: 'POST',
+            dataType: 'json',
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Enregistrement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                if (data.form_is_valid === true || data.success === true) {
+                    $(idModalEntity).modal('hide');
+                    
+                    Swal.fire({
+                        icon: "success",
+                        title: "Succès !",
+                        text: "L'opération a été effectuée avec succès.",
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.close();
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Erreur lors de la sauvegarde.",
+                });
+            }
+        });
+        return false;
+    }
+
+    $(document).on("click", clCreateEntity, loadForm);
+    $(document).on("click", clUpdateEntity, loadForm);
+    $(idModalEntity).on("submit", clCreateForm, saveForm);
+    $(idModalEntity).on("submit", clUpdateForm, saveForm);
+});
+</script>
+{% endblock extra_js %}
