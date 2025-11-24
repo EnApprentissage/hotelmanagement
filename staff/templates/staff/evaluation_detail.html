@@ -1,0 +1,130 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Détail de l'Évaluation{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .evaluation-badge {
+        font-size: 0.8rem;
+        padding: 0.25em 0.5em;
+    }
+    .readonly-field {
+        background-color: #e9ecef; /* gris clair mais plus contrasté */
+        border: 1px solid #adb5bd; /* bordure visible */
+        border-radius: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        width: 100%;
+        color: #212529; /* texte sombre */
+        font-size: 0.9rem;
+    }
+    .evaluation-label {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-bottom: 0.25rem;
+        color: #343a40; /* plus visible */
+    }
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+        background-color: #ffffff; /* fond blanc pour le card */
+        padding: 1rem;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'staff:employe_list' %}">Employés</a></li>
+          <li class="breadcrumb-item active">
+            <span>{{ employe.nom }} {{ employe.prenom }}</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container-fluid py-3">
+      <div class="d-flex justify-content-between mb-3">
+          <h4><i class="cil-folder-open"></i> Détail de l'Évaluation</h4>
+          <a href="{% url 'staff:evaluation_list' %}" class="btn btn-sm btn-secondary">
+              <i class="cil-arrow-left"></i> Retour
+          </a>
+      </div>
+
+      <div class="card">
+          <div class="row g-3">
+
+              <!-- Employé -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-user"></i> Employé</label>
+                  <div class="readonly-field">{{ evaluation.employe.nom }} {{ evaluation.employe.prenom }}</div>
+              </div>
+
+              <!-- Date d'évaluation -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-calendar"></i> Date d'évaluation</label>
+                  <div class="readonly-field">{{ evaluation.date_evaluation|date:"d/m/Y" }}</div>
+              </div>
+
+              <!-- Période évaluée -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-calendar-check"></i> Période évaluée</label>
+                  <div class="readonly-field">{{ evaluation.periode_evaluee }}</div>
+              </div>
+
+              <!-- Évaluateur -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-user-follow"></i> Évaluateur</label>
+                  <div class="readonly-field">{{ evaluation.evaluateur }}</div>
+              </div>
+
+              <!-- Objectifs -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-target"></i> Objectifs</label>
+                  <div class="readonly-field" style="min-height: 60px;">{{ evaluation.objectifs }}</div>
+              </div>
+
+              <!-- Réalisations -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-check-circle"></i> Réalisations</label>
+                  <div class="readonly-field" style="min-height: 60px;">{{ evaluation.realisations }}</div>
+              </div>
+
+              <!-- Points forts -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-thumb-up"></i> Points forts</label>
+                  <div class="readonly-field" style="min-height: 50px;">{{ evaluation.points_forts }}</div>
+              </div>
+
+              <!-- Points à améliorer -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-thumb-down"></i> Points à améliorer</label>
+                  <div class="readonly-field" style="min-height: 50px;">{{ evaluation.points_amelioration }}</div>
+              </div>
+
+              <!-- Note globale -->
+              <div class="col-md-6">
+                  <label class="evaluation-label"><i class="cil-star"></i> Note globale (/10)</label>
+                  <div class="readonly-field">{{ evaluation.note_globale }}</div>
+              </div>
+
+              <!-- Commentaires -->
+              <div class="col-md-12">
+                  <label class="evaluation-label"><i class="cil-notes"></i> Commentaires</label>
+                  <div class="readonly-field" style="min-height: 60px;">{{ evaluation.commentaires }}</div>
+              </div>
+
+          </div>
+      </div>
+  </div>
+</div>
+{% endblock content %}

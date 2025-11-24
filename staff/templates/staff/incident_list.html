@@ -235,7 +235,6 @@
 </div>
 
 {% csrf_token %}
-
 {% endblock content %}
 
 {% block extra_js %}
@@ -259,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const nom = newBtn.dataset.name;
                 
                 Swal.fire({
-                    title: `Supprimer l'incident de ${nom} ?`,
+                    title: `Supprimer le congé de ${nom} ?`,
                     text: "Cette action est irréversible !",
                     icon: "warning",
                     showCancelButton: true,
@@ -291,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 Swal.fire({
                                     icon: "success",
                                     title: "Supprimé !",
-                                    text: "L'incident a été supprimé avec succès.",
+                                    text: "Le congé a été supprimé avec succès.",
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
@@ -316,95 +315,96 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================
     // MODAL AJAX (Create/Update)
     // ========================================
-    var idModalEntity = "#modal-entity";
-    var clCreateEntity = ".js-create-entity";
-    var clUpdateEntity = ".js-update-entity";
-    var clCreateForm = ".js-entity-create-form";
-    var clUpdateForm = ".js-entity-update-form";
+    // var idModalEntity = "#modal-entity";
+    // var clCreateEntity = ".js-create-entity";
+    // var clUpdateEntity = ".js-update-entity";
+    // var clCreateForm = ".js-entity-create-form";
+    // var clUpdateForm = ".js-entity-update-form";
 
-    function loadForm() {
-        var btn = $(this);
+    // function loadForm() {
+    //     var btn = $(this);
         
-        $.ajax({
-            url: btn.attr("data-url"),
-            type: 'GET',
-            dataType: 'json',
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Chargement...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            },
-            success: function(data) {
-                Swal.close();
-                $(idModalEntity + " .modal-content").html(data.html_form);
-                $(idModalEntity).modal('show');
-            },
-            error: function(xhr) {
-                Swal.close();
-                Swal.fire({
-                    icon: "error",
-                    title: "Erreur !",
-                    text: "Impossible de charger le formulaire.",
-                });
-            }
-        });
-    }
+    //     $.ajax({
+    //         url: btn.attr("data-url"),
+    //         type: 'GET',
+    //         dataType: 'json',
+    //         beforeSend: function() {
+    //             Swal.fire({
+    //                 title: 'Chargement...',
+    //                 allowOutsideClick: false,
+    //                 didOpen: () => {
+    //                     Swal.showLoading();
+    //                 }
+    //             });
+    //         },
+    //         success: function(data) {
+    //             Swal.close();
+    //             $(idModalEntity + " .modal-content").html(data.html_form);
+    //             $(idModalEntity).modal('show');
+    //         },
+    //         error: function(xhr) {
+    //             Swal.close();
+    //             Swal.fire({
+    //                 icon: "error",
+    //                 title: "Erreur !",
+    //                 text: "Impossible de charger le formulaire.",
+    //             });
+    //         }
+    //     });
+    // }
 
-    function saveForm() {
-        var form = $(this);
+    // function saveForm() {
+    //     var form = $(this);
         
-        $.ajax({
-            url: form.attr("action"),
-            data: form.serialize(),
-            type: 'POST',
-            dataType: 'json',
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Enregistrement...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            },
-            success: function(data) {
-                if (data.form_is_valid === true || data.success === true) {
-                    $(idModalEntity).modal('hide');
+    //     $.ajax({
+    //         url: form.attr("action"),
+    //         data: form.serialize(),
+    //         type: 'POST',
+    //         dataType: 'json',
+    //         beforeSend: function() {
+    //             Swal.fire({
+    //                 title: 'Enregistrement...',
+    //                 allowOutsideClick: false,
+    //                 didOpen: () => {
+    //                     Swal.showLoading();
+    //                 }
+    //             });
+    //         },
+    //         success: function(data) {
+    //             if (data.form_is_valid === true || data.success === true) {
+    //                 $(idModalEntity).modal('hide');
                     
-                    Swal.fire({
-                        icon: "success",
-                        title: "Succès !",
-                        text: "L'opération a été effectuée avec succès.",
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.close();
-                    $(idModalEntity + " .modal-content").html(data.html_form);
-                }
-            },
-            error: function(xhr) {
-                Swal.close();
-                Swal.fire({
-                    icon: "error",
-                    title: "Erreur !",
-                    text: "Erreur lors de la sauvegarde.",
-                });
-            }
-        });
-        return false;
-    }
+    //                 Swal.fire({
+    //                     icon: "success",
+    //                     title: "Succès !",
+    //                     text: "L'opération a été effectuée avec succès.",
+    //                     timer: 1500,
+    //                     showConfirmButton: false
+    //                 }).then(() => {
+    //                     location.reload();
+    //                 });
+    //             } else {
+    //                 Swal.close();
+    //                 $(idModalEntity + " .modal-content").html(data.html_form);
+    //             }
+    //         },
+    //         error: function(xhr, status, error) {
+    //             Swal.close();
+    //             Swal.fire({
+    //                 icon: "error",
+    //                 title: "Erreur !",
+    //                 html: `<p>Erreur lors de la sauvegarde.</p>
+    //                        <small>Code: ${xhr.status}</small>`,
+    //             });
+    //         }
+    //     });
+    //     return false;
+    // }
 
-    $(document).on("click", clCreateEntity, loadForm);
-    $(document).on("click", clUpdateEntity, loadForm);
-    $(idModalEntity).on("submit", clCreateForm, saveForm);
-    $(idModalEntity).on("submit", clUpdateForm, saveForm);
+    // $(document).on("click", clCreateEntity, loadForm);
+    // $(document).on("click", clUpdateEntity, loadForm);
+    // $(idModalEntity).on("submit", clCreateForm, saveForm);
+    // $(idModalEntity).on("submit", clUpdateForm, saveForm);
 });
 </script>
 {% endblock extra_js %}

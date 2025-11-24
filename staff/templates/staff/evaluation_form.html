@@ -1,0 +1,154 @@
+{% load widget_tweaks %}
+
+<!-- Affichage des erreurs globales -->
+{% if form.non_field_errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="cil-warning"></i>
+    <strong>Erreur :</strong>
+    <ul class="mb-0">
+        {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <!-- Employé -->
+    <div class="col-md-12">
+        <label for="{{ form.employe.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-user"></i> Employé <span class="text-danger">*</span>
+        </label>
+        {% render_field form.employe class='form-select form-select-sm' %}
+        {% if form.employe.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.employe.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Date d'évaluation -->
+    <div class="col-md-6">
+        <label for="{{ form.date_evaluation.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar"></i> Date d'évaluation <span class="text-danger">*</span>
+        </label>
+        {% render_field form.date_evaluation class='form-control form-control-sm' type='date' %}
+        {% if form.date_evaluation.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.date_evaluation.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Période évaluée -->
+    <div class="col-md-6">
+        <label for="{{ form.periode_evaluee.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-calendar-check"></i> Période évaluée <span class="text-danger">*</span>
+        </label>
+        {% render_field form.periode_evaluee class='form-control form-control-sm' %}
+        {% if form.periode_evaluee.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.periode_evaluee.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Évaluateur -->
+    <div class="col-md-12">
+        <label for="{{ form.evaluateur.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-user-follow"></i> Évaluateur
+        </label>
+        {% render_field form.evaluateur class='form-select form-select-sm' %}
+        {% if form.evaluateur.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.evaluateur.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Objectifs -->
+    <div class="col-md-6">
+        <label for="{{ form.objectifs.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-target"></i> Objectifs <span class="text-danger">*</span>
+        </label>
+        {% render_field form.objectifs class="form-control form-control-sm" rows="2" placeholder="Décrivez les objectifs..." %}
+        {% if form.objectifs.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.objectifs.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Réalisations -->
+    <div class="col-md-6">
+        <label for="{{ form.realisations.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-check-circle"></i> Réalisations <span class="text-danger">*</span>
+        </label>
+        {% render_field form.realisations class="form-control form-control-sm" rows="2" placeholder="Décrivez les réalisations..." %}
+        {% if form.realisations.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.realisations.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Points forts -->
+    <div class="col-md-6">
+        <label for="{{ form.points_forts.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-thumb-up"></i> Points forts
+        </label>
+        {% render_field form.points_forts class="form-control form-control-sm" rows="2" placeholder="Ex: Compétences, qualités..." %}
+        {% if form.points_forts.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.points_forts.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Points à améliorer -->
+    <div class="col-md-6">
+        <label for="{{ form.points_amelioration.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-thumb-down"></i> Points à améliorer
+        </label>
+        {% render_field form.points_amelioration class="form-control form-control-sm" rows="2" placeholder="À améliorer..." %}
+        {% if form.points_amelioration.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.points_amelioration.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Note globale -->
+    <div class="col-md-6">
+        <label for="{{ form.note_globale.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-star"></i> Note globale (/10)
+        </label>
+        {% render_field form.note_globale class='form-control form-control-sm' %}
+        {% if form.note_globale.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.note_globale.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Commentaires -->
+    <div class="col-md-12">
+        <label for="{{ form.commentaires.id_for_label }}" class="form-label fw-bold">
+            <i class="cil-notes"></i> Commentaires
+        </label>
+        {% render_field form.commentaires class="form-control form-control-sm" rows="2" placeholder="Commentaires additionnels..." %}
+        {% if form.commentaires.errors %}
+        <div class="text-danger small mt-1">
+            {% for error in form.commentaires.errors %}<i class="cil-warning"></i> {{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info mt-3 mb-0" role="alert">
+    <i class="cil-info"></i>
+    <small>
+        <strong>Note :</strong> Les champs marqués d'un astérisque (<span class="text-danger">*</span>) sont obligatoires.
+    </small>
+</div>

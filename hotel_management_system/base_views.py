@@ -54,6 +54,7 @@ class AjaxFormMixin:
         context = {"form": form}
         data = {'form_is_valid': False, 'html_form': render_to_string(self.template_name, context, request=self.request)}
         return JsonResponse(data)
+    
 
     def form_valid(self, form):
         form.save()

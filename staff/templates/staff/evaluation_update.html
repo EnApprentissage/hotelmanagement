@@ -1,22 +1,22 @@
-<form method="post" action="{% url 'staff:incident_update' object.pk %}" class="js-entity-update-form">
+<form method="post" action="{% url 'staff:evaluation_update' object.pk %}" class="js-entity-update-form">
     {% csrf_token %}
 
-    <div class="modal-header bg-warning text-white">
+    <div class="modal-header bg-info text-white">
         <h5 class="modal-title">
-            <i class="cil-pencil"></i> Modifier l'Incident
+            <i class="cil-pencil"></i> Modifier l'Évaluation
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
     </div>
 
     <div class="modal-body">
-        {% include 'staff/incident_form.html' %}
+        {% include 'staff/evaluation_form.html' %}
     </div>
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="cil-x"></i> Annuler
         </button>
-        <button type="submit" class="btn btn-warning text-white">
+        <button type="submit" class="btn btn-info text-white">
             <i class="cil-check"></i> Mettre à jour
         </button>
     </div>

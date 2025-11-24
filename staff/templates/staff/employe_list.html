@@ -192,8 +192,8 @@
       </ul>
     </nav>
     {% endif %}
-    <!-- Modal Bootstrap pour Create/Update -->
-    <div class="modal fade" id="modal-entity" tabindex="-1" aria-labelledby="entityModalLabel" aria-hidden="true">
+<!-- Modal -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content"></div>
       </div>
@@ -202,10 +202,9 @@
 </div>
 
 {% csrf_token %}
+{% endblock content %}
 
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+{% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     // ========================================
@@ -215,7 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const deleteButtons = document.querySelectorAll(".delete-btn");
         
         deleteButtons.forEach(btn => {
-            // Supprimer les anciens listeners pour éviter les doublons
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
@@ -224,10 +222,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.stopPropagation();
                 
                 const url = newBtn.dataset.url;
-                const nom = newBtn.dataset.name || newBtn.closest("tr").querySelector("td:nth-child(2) .fw-medium").innerText;
+                const nom = newBtn.dataset.name;
                 
                 Swal.fire({
-                    title: `Supprimer ${nom} ?`,
+                    title: `Supprimer le congé de ${nom} ?`,
                     text: "Cette action est irréversible !",
                     icon: "warning",
                     showCancelButton: true,
@@ -238,7 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     reverseButtons: true
                 }).then(result => {
                     if (result.isConfirmed) {
-                        // Afficher loader
                         Swal.fire({
                             title: 'Suppression en cours...',
                             html: 'Veuillez patienter',
@@ -260,11 +257,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 Swal.fire({
                                     icon: "success",
                                     title: "Supprimé !",
-                                    text: "L'employé a été supprimé avec succès.",
+                                    text: "Le congé a été supprimé avec succès.",
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
-                                    // TOUJOURS recharger la page pour garantir la mise à jour
                                     location.reload();
                                 });
                             } else {
@@ -281,106 +277,89 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
     
-    // Attacher les listeners au chargement initial
     attachDeleteListeners();
     
     // ========================================
-    // INTERCEPTER LES RÉPONSES AJAX RÉUSSIES
-    // ========================================
-    // Variable pour tracker si une opération a réussi
-    let operationReussie = false;
-    
-    $(document).ajaxComplete(function(event, xhr, settings) {
-        try {
-            const response = JSON.parse(xhr.responseText);
-            
-            // Si l'opération a réussi (création ou modification)
-            if (response.form_is_valid === true && response.html_content_list) {
-                console.log("=== Opération réussie détectée ===");
-                operationReussie = true;
-                
-                // Mettre à jour le tableau
-                $('#entity-table tbody').html(response.html_content_list);
-                
-                // Réattacher les listeners de suppression
-                attachDeleteListeners();
-                
-                // Afficher un message de succès
-                if (settings.url.includes('/add/')) {
-                    console.log("=== Employé créé avec succès ===");
-                } else if (settings.url.includes('/update/')) {
-                    console.log("=== Employé modifié avec succès ===");
-                }
-            }
-        } catch (e) {
-            // Pas une réponse JSON, ignorer
-        }
-    });
-    
-    // Recharger la page quand la modale se ferme APRÈS une opération réussie
-    $('#modal-entity').on('hidden.bs.modal', function (e) {
-        if (operationReussie) {
-            console.log("=== Rechargement après opération réussie ===");
-            location.reload();
-        }
-    });
-    
-    // ========================================
-    // DÉBOGAGE (TEMPORAIRE)
-    // ========================================
-    console.log("=== Script chargé ===");
-    console.log("jQuery disponible?", typeof $ !== 'undefined');
-    console.log("entity-manager.js chargé?", typeof Helpers !== 'undefined');
-    
-    // Intercepter les clics sur créer
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.js-create-entity')) {
-            console.log("=== Bouton CRÉER cliqué ===");
-            console.log("URL:", e.target.closest('.js-create-entity').dataset.url);
-        }
-    });
-    
-    // Si jQuery est disponible, intercepter les réponses AJAX
-    if (typeof $ !== 'undefined') {
-        $(document).ajaxComplete(function(event, xhr, settings) {
-            console.log("=== Réponse AJAX ===");
-            console.log("URL:", settings.url);
-            console.log("Status:", xhr.status);
-            
-            try {
-                const response = JSON.parse(xhr.responseText);
-                console.log("Response JSON:", response);
-                
-                if (response.form_is_valid === false) {
-                    console.log("❌ FORMULAIRE INVALIDE - Erreurs détectées");
-                    console.log("HTML du formulaire avec erreurs:", response.html_form ? "présent" : "absent");
-                } else if (response.form_is_valid === true) {
-                    console.log("✅ FORMULAIRE VALIDE - Succès!");
-                    console.log("Contenu liste:", response.html_content_list ? "présent" : "absent");
-                }
-                
-                if (response.html_form) {
-                    console.log("Longueur html_form:", response.html_form.length);
-                }
-            } catch (e) {
-                console.log("Réponse non-JSON:", xhr.responseText.substring(0, 200));
-            }
-        });
-        
-        // Intercepter la soumission du formulaire
-        $(document).on('submit', '.js-entity-create-form', function(e) {
-            console.log("=== FORMULAIRE CREATE SOUMIS ===");
-            console.log("Action:", $(this).attr('action'));
-            console.log("Method:", $(this).attr('method'));
-            
-            const formData = new FormData(this);
-            console.log("=== DONNÉES DU FORMULAIRE ===");
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ':', pair[1]);
-            }
-        });
-    }
+// MODAL AJAX (Create / Update)
+// ========================================
+
+// const idModalEntity = "#modal-entity";
+// const clCreateEntity = ".js-create-entity";
+// const clUpdateEntity = ".js-update-entity";
+// const clCreateForm = ".js-entity-create-form";
+// const clUpdateForm = ".js-entity-update-form";
+
+// function loadForm() {
+//     const btn = $(this);
+
+//     $.ajax({
+//         url: btn.data("url"),
+//         type: "GET",
+//         dataType: "json",
+//         beforeSend: function() {
+//             Swal.fire({
+//                 title: "Chargement...",
+//                 allowOutsideClick: false,
+//                 didOpen: () => Swal.showLoading()
+//             });
+//         },
+//         success: function(data) {
+//             Swal.close();
+//             $(idModalEntity + " .modal-content").html(data.html_form);
+//             $(idModalEntity).modal("show");
+//         },
+//         error: function() {
+//             Swal.close();
+//             Swal.fire("Erreur", "Impossible de charger le formulaire.", "error");
+//         }
+//     });
+// }
+
+// function saveForm() {
+//     const form = $(this);
+
+//     $.ajax({
+//         url: form.attr("action"),
+//         type: form.attr("method"),
+//         data: form.serialize(),
+//         dataType: "json",
+//         beforeSend: function() {
+//             Swal.fire({
+//                 title: "Enregistrement...",
+//                 allowOutsideClick: false,
+//                 didOpen: () => Swal.showLoading()
+//             });
+//         },
+//         success: function(data) {
+//             if (data.form_is_valid) {
+//                 $(idModalEntity).modal("hide");
+//                 Swal.fire({
+//                     icon: "success",
+//                     title: "Succès",
+//                     text: "L'opération a été effectuée.",
+//                     timer: 1500,
+//                     showConfirmButton: false,
+//                 }).then(() => location.reload());
+//             } else {
+//                 Swal.close();
+//                 $(idModalEntity + " .modal-content").html(data.html_form);
+//             }
+//         },
+//         error: function() {
+//             Swal.close();
+//             Swal.fire("Erreur", "Impossible d'enregistrer.", "error");
+//         }
+//     });
+
+//     return false;
+// }
+
+// // 👉 Activation des événements AJAX
+// $(document).on("click", clCreateEntity, loadForm);
+// $(document).on("click", clUpdateEntity, loadForm);
+// $(document).on("submit", clCreateForm, saveForm);
+// $(document).on("submit", clUpdateForm, saveForm);
+
 });
 </script>
-
-{% endblock content %}
+{% endblock extra_js %}

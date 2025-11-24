@@ -87,6 +87,7 @@ class Employe(models.Model):
     # === AUDIT ===
     date_creation = models.DateTimeField(auto_now_add=True, verbose_name=_("Créé le"))
     date_modification = models.DateTimeField(auto_now=True, verbose_name=_("Modifié le"))
+    is_locked = models.BooleanField(default=False, verbose_name="Fiche verrouillée") 
 
     class Meta:
         db_table = 'employes'
@@ -95,10 +96,14 @@ class Employe(models.Model):
         ordering = ['-date_embauche', 'nom']
 
     def __str__(self):
-        return f"{self.prenom} {self.nom} - {self.poste}"
+        # Pour admin et logs
+        return f"{self.prenom} {self.nom}"
 
     def get_full_name(self):
         return f"{self.prenom} {self.nom}"
+
+    def get_full_name_with_poste(self):
+        return f"{self.prenom} {self.nom} - {self.poste}"
 
     def get_photo_url(self):
         if self.photo:
@@ -131,7 +136,7 @@ class Planning(models.Model):
     heure_fin = models.TimeField()
     poste_assigne = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
-    
+    is_locked = models.BooleanField(default=False, verbose_name="Planning verrouillé")
     class Meta:
         db_table = 'plannings'
         unique_together = ['employe', 'date', 'periode']
@@ -167,6 +172,7 @@ class Pointage(models.Model):
         blank=True
     )
     notes = models.TextField(_("Notes"), blank=True)
+    is_locked = models.BooleanField(default=False, verbose_name="Pointage verrouillé")
 
     class Meta:
         db_table = 'pointages'
@@ -223,6 +229,7 @@ class Conge(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
     approuve_par = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name='conges_approuves')
     date_demande = models.DateTimeField(auto_now_add=True)
+    is_locked = models.BooleanField(default=False, verbose_name="Congé verrouillé")
     
     class Meta:
         db_table = 'conges'
@@ -241,6 +248,7 @@ class Evaluation(models.Model):
     points_amelioration = models.TextField(blank=True)
     note_globale = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
     commentaires = models.TextField(blank=True)
+    is_locked = models.BooleanField(default=False, verbose_name="Évaluation verrouillée")
     
     class Meta:
         db_table = 'evaluations'
@@ -270,6 +278,7 @@ class Incident(models.Model):
     sanction = models.CharField(max_length=20, choices=SANCTION_CHOICES, blank=True)
     date_sanction = models.DateField(null=True, blank=True)
     signale_par = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True)
+    is_locked = models.BooleanField(default=False, verbose_name="Incident verrouillé")
     
     class Meta:
         db_table = 'incidents'
