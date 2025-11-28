@@ -1,0 +1,482 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Réservations{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .badge-status {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  .urgent-row {
+    background-color: #fff3cd !important;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Réservations</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0">
+        <i class="fa fa-calendar-check me-2 text-primary"></i> Liste des Réservations
+      </h5>
+      <button type="button" class="btn btn-sm btn-primary js-create-entity" title="Nouvelle réservation"
+        data-url="{% url 'reservations:reservation_create' %}">
+        <i class="cil-calendar-check"></i> Nouvelle Réservation
+      </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-md-3">
+            <select name="statut" class="form-select form-select-sm">
+              <option value="">Tous les statuts</option>
+              {% for value, label in statuts %}
+                <option value="{{ value }}" {% if request.GET.statut == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-7">
+            <input type="text" 
+                   name="search" 
+                   class="form-control form-control-sm"
+                   placeholder="🔍 Rechercher par n° réservation, client, chambre..."
+                   value="{{ search }}">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-primary" title="Filtrer">
+              <i class="cil-magnifying-glass"></i> 
+            </button>
+            <a href="{% url 'reservations:reservation_list' %}" class="btn btn-sm btn-secondary" title="Réinitialiser">
+              <i class="cil-loop-circular"></i>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Tableau -->
+    <div class="card"> 
+      <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+        <div class="d-flex align-items-center gap-2">
+          <i class="icon icon-xxl cil-calendar-check"></i>
+          <h5 class="card-title mb-0">Réservations</h5>
+        </div>
+        <span class="badge bg-light text-dark">{{ page_obj.paginator.count }} réservation(s)</span>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead>
+              <tr>
+                <th class="text-center">N°</th>
+                <th>N° Réservation</th>
+                <th>Client</th>
+                <th>Chambre</th>
+                <th>Arrivée</th>
+                <th>Départ</th>
+                <th>Nuits</th>
+                <th class="text-center">Statut</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for reservation in reservations %}
+                <tr {% if reservation.date_arrivee == today %}class="urgent-row"{% endif %}>
+                  <td class="text-center">
+                    {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+                  </td>
+                  
+                  <td>
+                    <strong>{{ reservation.numero_reservation }}</strong>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fa fa-tag"></i> {{ reservation.get_type_reservation_display }}
+                    </small>
+                  </td>
+                  
+                  <td>
+                    <a href="{% url 'clients:client_detail' reservation.client.pk %}" class="text-decoration-none">
+                      {{ reservation.client.nom_complet }}
+                    </a>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fa fa-phone"></i> {{ reservation.client.phone }}
+                    </small>
+                  </td>
+                  
+                  <td>
+                    <span class="badge bg-info">Chambre {{ reservation.chambre.numero }}</span>
+                    <br>
+                    <small class="text-muted">{{ reservation.chambre.type_chambre.nom }}</small>
+                  </td>
+                  
+                  <td>
+                    {{ reservation.date_arrivee|date:"d/m/Y" }}
+                    {% if reservation.date_checkin %}
+                      <br><small class="text-success">
+                        <i class="fa fa-check"></i> {{ reservation.date_checkin|date:"H:i" }}
+                      </small>
+                    {% endif %}
+                  </td>
+                  
+                  <td>
+                    {{ reservation.date_depart|date:"d/m/Y" }}
+                    {% if reservation.date_checkout %}
+                      <br><small class="text-success">
+                        <i class="fa fa-check"></i> {{ reservation.date_checkout|date:"H:i" }}
+                      </small>
+                    {% endif %}
+                  </td>
+                  
+                  <td class="text-center">
+                    <strong>{{ reservation.nombre_nuits }}</strong>
+                  </td>
+                  
+                  <td class="text-center">
+                    {% if reservation.statut == 'confirmee' %}
+                      <span class="badge bg-success badge-status">{{ reservation.get_statut_display }}</span>
+                    {% elif reservation.statut == 'en_cours' %}
+                      <span class="badge bg-primary badge-status">{{ reservation.get_statut_display }}</span>
+                    {% elif reservation.statut == 'terminee' %}
+                      <span class="badge bg-secondary badge-status">{{ reservation.get_statut_display }}</span>
+                    {% elif reservation.statut == 'annulee' %}
+                      <span class="badge bg-danger badge-status">{{ reservation.get_statut_display }}</span>
+                    {% elif reservation.statut == 'no_show' %}
+                      <span class="badge bg-dark badge-status">{{ reservation.get_statut_display }}</span>
+                    {% else %}
+                      <span class="badge bg-warning badge-status">{{ reservation.get_statut_display }}</span>
+                    {% endif %}
+                  </td>
+                  
+                  <td class="text-end">
+                    <strong>{{ reservation.total|floatformat:0 }} FBU</strong>
+                    {% if reservation.acompte > 0 %}
+                      <br><small class="text-muted">
+                        Acompte: {{ reservation.acompte|floatformat:0 }} FBU
+                      </small>
+                    {% endif %}
+                  </td>
+                  
+                  <td class="text-center">
+                    <!-- Voir détails -->
+                    <a href="{% url 'reservations:reservation_detail' reservation.pk %}" 
+                       class="btn btn-sm text-info" 
+                       title="Voir détails">
+                      <i class="icon cil-folder-open"></i>
+                    </a>
+
+                    <!-- Modifier -->
+                    {% if reservation.statut not in 'terminee,annulee' %}
+                      <button type="button" 
+                              class="btn btn-sm text-primary js-update-entity" 
+                              title="Modifier"
+                              data-url="{% url 'reservations:reservation_update' reservation.pk %}">
+                        <i class="icon cil-pencil"></i>
+                      </button>
+                    {% else %}
+                      <button type="button" 
+                              class="btn btn-sm text-muted" 
+                              title="Réservation terminée"
+                              disabled>
+                        <i class="icon cil-pencil"></i>
+                      </button>
+                    {% endif %}
+                    
+                    <!-- Supprimer -->
+                    {% if reservation.statut == 'en_attente' %}
+                      <button type="button" 
+                              class="btn btn-sm text-danger delete-btn" 
+                              title="Supprimer"
+                              data-url="{% url 'reservations:reservation_delete' reservation.pk %}"
+                              data-name="{{ reservation.numero_reservation }}">
+                        <i class="icon cil-trash"></i>
+                      </button>
+                    {% else %}
+                      <button type="button" 
+                              class="btn btn-sm text-muted" 
+                              title="Impossible de supprimer"
+                              disabled>
+                        <i class="icon cil-trash"></i>
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="10" class="text-center py-5 text-muted">
+                    <i class="fa fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-3">Aucune réservation trouvée</p>
+                    {% if search %}
+                      <a href="{% url 'reservations:reservation_list' %}" class="btn btn-sm btn-secondary me-2">
+                        <i class="fa fa-times"></i> Effacer la recherche
+                      </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-primary js-create-entity"
+                      data-url="{% url 'reservations:reservation_create' %}">
+                      <i class="fa fa-plus"></i> Nouvelle réservation
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}">«</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}">‹</a>
+          </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+          <span class="page-link">
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+        </li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}">›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}">»</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("=== Script Réservations chargé ===");
+
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const attachDeleteListeners = () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            // On recrée le bouton pour éviter les doublons d'événements
+            const newBtn = btn.cloneNode(true);
+            btn.replaceWith(newBtn);
+
+            newBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const url = this.dataset.url;
+                const nom = this.dataset.name || "cette réservation";
+
+                Swal.fire({
+                    title: `Supprimer ${nom} ?`,
+                    text: "Cette action est irréversible !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                    reverseButtons: true
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: "Suppression en cours...",
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                                "X-Requested-With": "XMLHttpRequest"
+                            }
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success || data.form_is_valid) {
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Supprimée !",
+                                    text: "La réservation a été supprimée.",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Rafraîchissement intelligent
+                                    if (typeof calendar !== 'undefined' && calendar?.refetchEvents) {
+                                        calendar.refetchEvents();
+                                    } else {
+                                        window.location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire("Erreur", data.error || "Impossible de supprimer.", "error");
+                            }
+                        })
+                        .catch(() => {
+                            Swal.fire("Erreur", "Problème de connexion.", "error");
+                        });
+                    }
+                });
+            });
+        });
+    };
+    attachDeleteListeners();
+
+    // ========================================
+    // MODAL AJAX (Création / Modification)
+    // ========================================
+    const modal = "#modal-entity";
+    const loadForm = function() {
+        const btn = $(this);
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: "GET",
+            dataType: "json",
+            beforeSend: () => Swal.fire({ title: "Chargement...", allowOutsideClick: false, didOpen: () => Swal.showLoading() }),
+            success: data => {
+                Swal.close();
+                if (data.html_form) {
+                    $(modal + " .modal-content").html(data.html_form);
+                    $(modal).modal("show");
+                    initFormEvents();
+                } else if (data.error) {
+                    Swal.fire("Attention", data.error, "warning");
+                }
+            },
+            error: () => {
+                Swal.close();
+                Swal.fire("Erreur", "Impossible de charger le formulaire.", "error");
+            }
+        });
+    };
+
+    const initFormEvents = () => {
+        // Ton code existant (nouveau client, calcul total, etc.) reste ici
+        // → je ne le réécris pas pour garder ton code propre
+
+        $(modal).find("form").off("submit").on("submit", function(e) {
+            e.preventDefault();
+            submitFormAjax();
+        });
+    };
+
+    // ========================================
+    // SOUMISSION AJAX + SWEETALERT + RAFRAÎCHISSEMENT INTELLIGENT
+    // ========================================
+    const submitFormAjax = () => {
+        const form = $(modal).find("form");
+        const submitBtn = form.find("button[type=submit]");
+        const formData = new FormData(form[0]);
+
+        submitBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> En cours...');
+
+        $.ajax({
+            url: form.attr("action"),
+            data: formData,
+            type: "POST",
+            processData: false,
+            contentType: false,
+            dataType: "json",
+            beforeSend: () => {
+                Swal.fire({
+                    title: "Enregistrement...",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+            },
+            success: data => {
+                if (data.form_is_valid || data.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Succès !",
+                        text: data.message || "Réservation enregistrée avec succès !",
+                        timer: 1800,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $(modal).modal("hide");
+                        $(".modal-backdrop").remove();
+                        $("body").removeClass("modal-open").css("padding-right", "");
+
+                        // Rafraîchissement magique du calendrier sans reload complet
+                        if (typeof calendar !== "undefined" && calendar?.refetchEvents) {
+                            console.log("Calendrier rafraîchi instantanément");
+                            calendar.refetchEvents();
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    // Erreurs de validation → réafficher le formulaire
+                    Swal.close();
+                    submitBtn.prop("disabled", false).html("Enregistrer");
+                    $(modal + " .modal-content").html(data.html_form);
+                    initFormEvents();
+                }
+            },
+            error: () => {
+                Swal.close();
+                submitBtn.prop("disabled", false).html("Enregistrer");
+                Swal.fire("Erreur", "Problème serveur ou connexion.", "error");
+            }
+        });
+    };
+
+    // ========================================
+    // Lancement des événements
+    // ========================================
+    $(document).on("click", ".js-create-entity, .js-update-entity", loadForm);
+});
+</script>
+{% endblock extra_js %}

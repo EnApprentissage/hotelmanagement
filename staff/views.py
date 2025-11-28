@@ -214,36 +214,128 @@ class EmployeUpdateView(BaseAjaxUpdateView):
     success_url = reverse_lazy('staff:employe_list')
     success_message = _('Employé mis à jour avec succès')
 
-    def get(self, request, *args, **kwargs):
-        """Charger le formulaire pré-rempli pour la modale AJAX"""
-        self.object = self.get_object()
-        form = self.get_form()
+    def dispatch(self, request, *args, **kwargs):
+        """Bloquer COMPLÈTEMENT l'accès si verrouillé"""
+        employe = self.get_object()
+        
+        # 🔥 BLOQUER MÊME LE GET si verrouillé
+        if employe.is_locked:
+            if request.method == 'GET':
+                # Retourner un formulaire en lecture seule
+                return JsonResponse({
+                    'html_form': self.get_locked_form_html(employe),
+                    'is_locked': True
+                })
+            else:
+                # Bloquer complètement le POST
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': '🔒 Cette fiche est verrouillée et ne peut plus être modifiée.',
+                    'is_locked': True
+                })
+        
+        return super().dispatch(request, *args, **kwargs)
 
-        html_form = render_to_string(
-            self.template_name,
-            {'form': form, 'object': self.object},
-            request=request
-        )
+    def get_locked_form_html(self, employe):
+        """Générer un formulaire verrouillé en lecture seule"""
+        html = f"""
+        <div class="modal-header bg-warning">
+            <h5 class="modal-title">
+                <i class="fas fa-lock"></i> Fiche Verrouillée
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Cette fiche est verrouillée</strong> et ne peut plus être modifiée.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Nom</label>
+                    <p class="form-control-plaintext">{employe.nom}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Prénom</label>
+                    <p class="form-control-plaintext">{employe.prenom}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Matricule</label>
+                    <p class="form-control-plaintext">{employe.matricule}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Poste</label>
+                    <p class="form-control-plaintext">{employe.poste}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Email</label>
+                    <p class="form-control-plaintext">{employe.email}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Téléphone</label>
+                    <p class="form-control-plaintext">{employe.phone}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+        </div>
+        """
+        return html
 
-        return JsonResponse({'html_form': html_form})
+    def get_form(self, form_class=None):
+        """Désactiver tous les champs si verrouillé"""
+        form = super().get_form(form_class)
+        if self.object and self.object.is_locked:
+            for field in form.fields:
+                form.fields[field].disabled = True
+                form.fields[field].widget.attrs['readonly'] = True
+        return form
 
     def post(self, request, *args, **kwargs):
         """Soumission AJAX de la modification"""
         self.object = self.get_object()
+        
+        print("=== POST REQUEST ===")
+        print("POST data:", request.POST)
+        print("validate_lock présent?", 'validate_lock' in request.POST)
+        
+        # 🔒 DÉTECTER LE BOUTON "Valider et Verrouiller"
+        if 'validate_lock' in request.POST:
+            print("=== VERROUILLAGE DÉTECTÉ ===")
+            self.object.is_locked = True
+            self.object.save(update_fields=['is_locked'])
+            print(f"=== Employé {self.object.pk} verrouillé ===")
+            
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True,
+                'locked': True,
+                'message': f'🔒 Fiche de {self.object.get_full_name()} verrouillée avec succès.',
+            })
+        
+        # Sinon, traitement normal du formulaire
+        print("=== MISE À JOUR NORMALE ===")
         form = self.get_form()
 
         if form.is_valid():
             return self.form_valid(form)
         else:
+            print("Erreurs formulaire:", form.errors)
             return self.form_invalid(form)
 
     def form_valid(self, form):
         """Sauvegarder les modifications"""
         instance = form.save()
+        print(f"=== Employé {instance.pk} mis à jour ===")
 
         return JsonResponse({
             'form_is_valid': True,
-            'url_redirect': str(self.success_url),
+            'success': True,
             'message': self.success_message
         })
 
@@ -257,11 +349,10 @@ class EmployeUpdateView(BaseAjaxUpdateView):
 
         return JsonResponse({
             'form_is_valid': False,
+            'success': False,
             'html_form': html_form
         })
-
-
-
+    
 class EmployeDeleteView(DeleteView):
     model = Employe
     success_url = reverse_lazy('staff:employe_list')
@@ -443,13 +534,85 @@ class PlanningCreateView(BaseAjaxCreateView):
 class PlanningUpdateView(BaseAjaxUpdateView):
     model = Planning
     form_class = PlanningForm
-    template_name = 'staff/planning_form.html'
+    template_name = 'staff/planning_update.html'  # 🔥 CHANGÉ ICI
     success_url = reverse_lazy('staff:planning_list')
     success_message = _('Planning mis à jour avec succès')
 
     def get_object(self):
         """Récupérer l'objet Planning"""
         return get_object_or_404(Planning, pk=self.kwargs['pk'])
+
+    def dispatch(self, request, *args, **kwargs):
+        """Bloquer COMPLÈTEMENT l'accès si verrouillé"""
+        planning = self.get_object()
+        
+        if planning.is_locked:
+            if request.method == 'GET':
+                # Retourner un formulaire en lecture seule
+                return JsonResponse({
+                    'html_form': self.get_locked_form_html(planning),
+                    'is_locked': True
+                })
+            else:
+                # Bloquer complètement le POST
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': '🔒 Ce planning est verrouillé et ne peut plus être modifié.',
+                    'is_locked': True
+                })
+        
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_locked_form_html(self, planning):
+        """Générer un formulaire verrouillé en lecture seule"""
+        html = f"""
+        <div class="modal-header bg-warning text-white">
+            <h5 class="modal-title">
+                <i class="fas fa-lock"></i> Planning Verrouillé
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Ce planning est verrouillé</strong> et ne peut plus être modifié.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Employé</label>
+                    <p class="form-control-plaintext">{planning.employe.get_full_name()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date</label>
+                    <p class="form-control-plaintext">{planning.date.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Période</label>
+                    <p class="form-control-plaintext">{planning.get_periode_display()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Heure début</label>
+                    <p class="form-control-plaintext">{planning.heure_debut.strftime('%H:%M')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Heure fin</label>
+                    <p class="form-control-plaintext">{planning.heure_fin.strftime('%H:%M')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Poste assigné</label>
+                    <p class="form-control-plaintext">{planning.poste_assigne or '—'}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+        </div>
+        """
+        return html
 
     def get(self, request, *args, **kwargs):
         """Charger le formulaire pré-rempli dans la modale"""
@@ -471,6 +634,19 @@ class PlanningUpdateView(BaseAjaxUpdateView):
         print("POST data:", request.POST)
         
         self.object = self.get_object()
+        
+        # 🔒 Si bouton "Valider et verrouiller"
+        if 'validate_lock' in request.POST:
+            self.object.is_locked = True
+            self.object.save(update_fields=['is_locked'])
+            print(f"✅ Planning verrouillé: ID={self.object.pk}")
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True,
+                'locked': True,
+                'message': f'🔒 Planning du {self.object.date.strftime("%d/%m/%Y")} verrouillé avec succès.',
+            })
+        
         form = self.get_form()
         
         print("Form errors:", form.errors if not form.is_valid() else "Aucune erreur")
@@ -491,12 +667,13 @@ class PlanningUpdateView(BaseAjaxUpdateView):
             
             print(f"✅ Planning modifié: ID={instance.pk}, Date={instance.date}, Employé={instance.employe}")
             
-            # ✅ Message de succès
             if self.success_message:
                 messages.success(self.request, self.success_message)
 
             return JsonResponse({
-                'form_is_valid': True
+                'form_is_valid': True,
+                'success': True,
+                'message': self.success_message
             })
             
         except Exception as e:
@@ -518,9 +695,10 @@ class PlanningUpdateView(BaseAjaxUpdateView):
             request=self.request
         )
         return JsonResponse({
-       'form_is_valid': True,
-       'success': True  # ✅ Ajouté
-   })
+            'form_is_valid': False,
+            'success': False,
+            'html_form': html_form
+        })
 
 
 class PlanningDeleteView(DeleteView):
@@ -704,6 +882,80 @@ class CongeUpdateView(BaseAjaxUpdateView):
         """Récupérer l'objet Conge"""
         return get_object_or_404(Conge, pk=self.kwargs['pk'])
 
+    def dispatch(self, request, *args, **kwargs):
+        """Bloquer COMPLÈTEMENT l'accès si verrouillé"""
+        conge = self.get_object()
+        
+        if conge.is_locked:
+            if request.method == 'GET':
+                return JsonResponse({
+                    'html_form': self.get_locked_form_html(conge),
+                    'is_locked': True
+                })
+            else:
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': '🔒 Ce congé est verrouillé et ne peut plus être modifié.',
+                    'is_locked': True
+                })
+        
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_locked_form_html(self, conge):
+        """Générer un formulaire verrouillé en lecture seule"""
+        html = f"""
+        <div class="modal-header bg-warning text-white">
+            <h5 class="modal-title">
+                <i class="fas fa-lock"></i> Congé Verrouillé
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Ce congé est verrouillé</strong> et ne peut plus être modifié.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Employé</label>
+                    <p class="form-control-plaintext">{conge.employe.get_full_name()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Type</label>
+                    <p class="form-control-plaintext">{conge.get_type_conge_display()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Statut</label>
+                    <p class="form-control-plaintext">{conge.get_statut_display()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date début</label>
+                    <p class="form-control-plaintext">{conge.date_debut.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date fin</label>
+                    <p class="form-control-plaintext">{conge.date_fin.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Nombre de jours</label>
+                    <p class="form-control-plaintext">{conge.nombre_jours} jour(s)</p>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Motif</label>
+                    <p class="form-control-plaintext">{conge.motif}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="cil-x"></i> Fermer
+            </button>
+        </div>
+        """
+        return html
+
     def get(self, request, *args, **kwargs):
         """Charger le formulaire pré-rempli dans la modale"""
         self.object = self.get_object()
@@ -718,6 +970,18 @@ class CongeUpdateView(BaseAjaxUpdateView):
     def post(self, request, *args, **kwargs):
         """Traiter la soumission du formulaire de modification"""
         self.object = self.get_object()
+        
+        # 🔒 Si bouton "Valider et verrouiller"
+        if 'validate_lock' in request.POST:
+            self.object.is_locked = True
+            self.object.save(update_fields=['is_locked'])
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True,
+                'locked': True,
+                'message': f'🔒 Congé de {self.object.employe.get_full_name()} verrouillé avec succès.',
+            })
+        
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -731,7 +995,7 @@ class CongeUpdateView(BaseAjaxUpdateView):
         return JsonResponse({
             'form_is_valid': True,
             'success': True,
-            'url_redirect': str(self.success_url),  # <-- Ajouté pour redirection AJAX
+            'message': self.success_message
         })
 
     def form_invalid(self, form):
@@ -742,10 +1006,13 @@ class CongeUpdateView(BaseAjaxUpdateView):
             request=self.request
         )
         return JsonResponse({
-            'form_is_valid': False,  # ✅ corrigé
-            'success': False,        # ✅ corrigé
+            'form_is_valid': False,
+            'success': False,
             'html_form': html_form
         })
+
+
+
 
     
 class CongeDeleteView(DeleteView):
@@ -821,6 +1088,72 @@ class EvaluationUpdateView(BaseAjaxUpdateView):
         """Récupérer l'objet Evaluation"""
         return get_object_or_404(Evaluation, pk=self.kwargs['pk'])
 
+    def dispatch(self, request, *args, **kwargs):
+        """Bloquer COMPLÈTEMENT l'accès si verrouillé"""
+        evaluation = self.get_object()
+        
+        if evaluation.is_locked:
+            if request.method == 'GET':
+                return JsonResponse({
+                    'html_form': self.get_locked_form_html(evaluation),
+                    'is_locked': True
+                })
+            else:
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': '🔒 Cette évaluation est verrouillée et ne peut plus être modifiée.',
+                    'is_locked': True
+                })
+        
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_locked_form_html(self, evaluation):
+        """Générer un formulaire verrouillé en lecture seule"""
+        html = f"""
+        <div class="modal-header bg-info text-white">
+            <h5 class="modal-title">
+                <i class="fas fa-lock"></i> Évaluation Verrouillée
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Cette évaluation est verrouillée</strong> et ne peut plus être modifiée.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Employé</label>
+                    <p class="form-control-plaintext">{evaluation.employe.get_full_name()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date évaluation</label>
+                    <p class="form-control-plaintext">{evaluation.date_evaluation.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Période évaluée</label>
+                    <p class="form-control-plaintext">{evaluation.periode_evaluee}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Note globale</label>
+                    <p class="form-control-plaintext">{evaluation.note_globale or '—'}/10</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Évaluateur</label>
+                    <p class="form-control-plaintext">{evaluation.evaluateur.get_full_name() if evaluation.evaluateur else '—'}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="cil-x"></i> Fermer
+            </button>
+        </div>
+        """
+        return html
+
     def get(self, request, *args, **kwargs):
         """Charger le formulaire pré-rempli dans la modale"""
         self.object = self.get_object()
@@ -835,6 +1168,18 @@ class EvaluationUpdateView(BaseAjaxUpdateView):
     def post(self, request, *args, **kwargs):
         """Traiter la soumission du formulaire de modification"""
         self.object = self.get_object()
+        
+        # 🔒 Si bouton "Valider et verrouiller"
+        if 'validate_lock' in request.POST:
+            self.object.is_locked = True
+            self.object.save(update_fields=['is_locked'])
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True,
+                'locked': True,
+                'message': f'🔒 Évaluation de {self.object.employe.get_full_name()} verrouillée avec succès.',
+            })
+        
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -847,8 +1192,8 @@ class EvaluationUpdateView(BaseAjaxUpdateView):
 
         return JsonResponse({
             'form_is_valid': True,
-            'url_redirect': str(self.success_url),
             'success': True,
+            'message': self.success_message
         })
 
     def form_invalid(self, form):
@@ -859,11 +1204,10 @@ class EvaluationUpdateView(BaseAjaxUpdateView):
             request=self.request
         )
         return JsonResponse({
-            'form_is_valid': False,  # ✅ Corrigé
-            'html_form': html_form,
-            'success': False,        # ✅ Corrigé
+            'form_is_valid': False,
+            'success': False,
+            'html_form': html_form
         })
-
 
 class EvaluationDetailView(DetailView):
     model = Evaluation
@@ -1006,6 +1350,76 @@ class IncidentUpdateView(BaseAjaxUpdateView):
         """Récupérer l'objet Incident"""
         return get_object_or_404(Incident, pk=self.kwargs['pk'])
 
+    def dispatch(self, request, *args, **kwargs):
+        """Bloquer COMPLÈTEMENT l'accès si verrouillé"""
+        incident = self.get_object()
+        
+        if incident.is_locked:
+            if request.method == 'GET':
+                return JsonResponse({
+                    'html_form': self.get_locked_form_html(incident),
+                    'is_locked': True
+                })
+            else:
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': '🔒 Cet incident est verrouillé et ne peut plus être modifié.',
+                    'is_locked': True
+                })
+        
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_locked_form_html(self, incident):
+        """Générer un formulaire verrouillé en lecture seule"""
+        html = f"""
+        <div class="modal-header bg-warning text-white">
+            <h5 class="modal-title">
+                <i class="fas fa-lock"></i> Incident Verrouillé
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Cet incident est verrouillé</strong> et ne peut plus être modifié.
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Employé</label>
+                    <p class="form-control-plaintext">{incident.employe.get_full_name()}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date incident</label>
+                    <p class="form-control-plaintext">{incident.date_incident.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Type</label>
+                    <p class="form-control-plaintext">{incident.get_type_incident_display()}</p>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Description</label>
+                    <p class="form-control-plaintext">{incident.description}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Sanction</label>
+                    <p class="form-control-plaintext">{incident.get_sanction_display() if incident.sanction else '—'}</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date sanction</label>
+                    <p class="form-control-plaintext">{incident.date_sanction.strftime('%d/%m/%Y') if incident.date_sanction else '—'}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="cil-x"></i> Fermer
+            </button>
+        </div>
+        """
+        return html
+
     def get(self, request, *args, **kwargs):
         """Charger le formulaire pré-rempli dans la modale"""
         self.object = self.get_object()
@@ -1018,8 +1432,20 @@ class IncidentUpdateView(BaseAjaxUpdateView):
         return JsonResponse({'html_form': html_form})
 
     def post(self, request, *args, **kwargs):
-        """Traiter la soumission du formulaire"""
+        """Traiter la soumission du formulaire de modification"""
         self.object = self.get_object()
+        
+        # 🔒 Si bouton "Valider et verrouiller"
+        if 'validate_lock' in request.POST:
+            self.object.is_locked = True
+            self.object.save(update_fields=['is_locked'])
+            return JsonResponse({
+                'form_is_valid': True,
+                'success': True,
+                'locked': True,
+                'message': f'🔒 Incident verrouillé avec succès.',
+            })
+        
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -1033,7 +1459,7 @@ class IncidentUpdateView(BaseAjaxUpdateView):
         return JsonResponse({
             'form_is_valid': True,
             'success': True,
-            'url_redirect': str(self.success_url),  # <-- Ajouté pour redirection AJAX
+            'message': self.success_message
         })
 
     def form_invalid(self, form):
@@ -1044,10 +1470,11 @@ class IncidentUpdateView(BaseAjaxUpdateView):
             request=self.request
         )
         return JsonResponse({
-            'form_is_valid': False,  # ✅ corrigé
-            'success': False,        # ✅ corrigé
+            'form_is_valid': False,
+            'success': False,
             'html_form': html_form
         })
+
 
     
 class IncidentDeleteView(DeleteView):

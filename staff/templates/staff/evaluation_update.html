@@ -1,23 +1,50 @@
-<form method="post" action="{% url 'staff:evaluation_update' object.pk %}" class="js-entity-update-form">
+<!-- Modal pour modification d'une évaluation -->
+<form method="post" action="{% url 'staff:evaluation_update' object.pk %}" class="js-entity-update-form" id="form-evaluation-update">
     {% csrf_token %}
 
     <div class="modal-header bg-info text-white">
         <h5 class="modal-title">
-            <i class="cil-pencil"></i> Modifier l'Évaluation
+            {% if object.is_locked %}
+                <i class="fas fa-lock"></i> Évaluation Verrouillée
+            {% else %}
+                <i class="cil-pencil"></i> Modifier l'Évaluation
+            {% endif %}
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
     </div>
 
     <div class="modal-body">
+        {% if object.is_locked %}
+            <div class="alert alert-warning mb-3">
+                <i class="fas fa-lock"></i> 
+                <strong>Évaluation verrouillée</strong> - Cette évaluation ne peut plus être modifiée.
+            </div>
+        {% endif %}
+        
         {% include 'staff/evaluation_form.html' %}
     </div>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="cil-x"></i> Annuler
-        </button>
-        <button type="submit" class="btn btn-info text-white">
-            <i class="cil-check"></i> Mettre à jour
-        </button>
+        {% if object.is_locked %}
+            <!-- 🔒 ÉVALUATION VERROUILLÉE -->
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="cil-x"></i> Fermer
+            </button>
+        {% else %}
+            <!-- ✏️ ÉVALUATION NON VERROUILLÉE -->
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="cil-x"></i> Annuler
+            </button>
+            
+            <!-- Bouton Mettre à jour normal -->
+            <button type="button" class="btn btn-info text-white btn-update-normal">
+                <i class="cil-check"></i> Mettre à jour
+            </button>
+            
+            <!-- Bouton Valider et Verrouiller -->
+            <button type="button" class="btn btn-success btn-validate-lock">
+                <i class="fas fa-lock"></i> Valider et Verrouiller
+            </button>
+        {% endif %}
     </div>
 </form>

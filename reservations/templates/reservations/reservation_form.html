@@ -1,0 +1,173 @@
+<div class="row">
+    <!-- ================== COLONNE 1: CLIENT ================== -->
+    <div class="col-md-6">
+        <h6 class="mb-3 border-bottom pb-2">
+            <i class="fa fa-user"></i> Informations Client
+        </h6>
+
+        <div class="mb-3">
+            <div class="form-check">
+                {{ form.nouveau_client }}
+                <label class="form-check-label" for="{{ form.nouveau_client.id_for_label }}">
+                    {{ form.nouveau_client.label }}
+                </label>
+            </div>
+        </div>
+        
+        <div id="clientExistant">
+            <div class="mb-3">
+                {{ form.client.label_tag }}
+                {{ form.client }}
+                {% if form.client.errors %}
+                    <div class="text-danger small">{{ form.client.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div id="nouveauClientFields" style="display: none;">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_nom.id_for_label }}" class="form-label">
+                        {{ form.client_nom.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.client_nom }}
+                    {% if form.client_nom.errors %}
+                        <div class="text-danger small">{{ form.client_nom.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_prenom.id_for_label }}" class="form-label">
+                        {{ form.client_prenom.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.client_prenom }}
+                    {% if form.client_prenom.errors %}
+                        <div class="text-danger small">{{ form.client_prenom.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_email.id_for_label }}" class="form-label">
+                        {{ form.client_email.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.client_email }}
+                    {% if form.client_email.errors %}
+                        <div class="text-danger small">{{ form.client_email.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_telephone.id_for_label }}" class="form-label">
+                        {{ form.client_telephone.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.client_telephone }}
+                    {% if form.client_telephone.errors %}
+                        <div class="text-danger small">{{ form.client_telephone.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_date_naissance.id_for_label }}" class="form-label">
+                        {{ form.client_date_naissance.label }}
+                    </label>
+                    {{ form.client_date_naissance }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.client_piece_identite.id_for_label }}" class="form-label">
+                        {{ form.client_piece_identite.label }}
+                    </label>
+                    {{ form.client_piece_identite }}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="{{ form.client_adresse.id_for_label }}" class="form-label">
+                        {{ form.client_adresse.label }}
+                    </label>
+                    {{ form.client_adresse }}
+                </div>
+            </div>
+        </div>
+
+        <h6 class="mb-3 mt-4 border-bottom pb-2">
+            <i class="fa fa-bed"></i> Chambre et Dates
+        </h6>
+
+        <div class="mb-3">
+            {{ form.chambre.label_tag }}
+            {{ form.chambre }}
+            {% if form.chambre.errors %}
+                <div class="text-danger small">{{ form.chambre.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.type_reservation.label_tag }}
+            {{ form.type_reservation }}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.date_arrivee.label_tag }}
+                {{ form.date_arrivee }}
+                {% if form.date_arrivee.errors %}
+                    <div class="text-danger small">{{ form.date_arrivee.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.date_depart.label_tag }}
+                {{ form.date_depart }}
+                {% if form.date_depart.errors %}
+                    <div class="text-danger small">{{ form.date_depart.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.nombre_adultes.label_tag }}
+                {{ form.nombre_adultes }}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.nombre_enfants.label_tag }}
+                {{ form.nombre_enfants }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== COLONNE 2: TARIFICATION ================== -->
+    <div class="col-md-6">
+        <h6 class="mb-3 border-bottom pb-2">
+            <i class="fa fa-money-bill"></i> Tarification
+        </h6>
+
+        <div class="mb-3">
+            {{ form.prix_par_nuit.label_tag }}
+            <div class="input-group">
+                {{ form.prix_par_nuit }}
+                <span class="input-group-text">FBU</span>
+            </div>
+            {% if form.prix_par_nuit.errors %}
+                <div class="text-danger small">{{ form.prix_par_nuit.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.acompte.label_tag }}
+            <div class="input-group">
+                {{ form.acompte }}
+                <span class="input-group-text">FBU</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Total estimé:</strong> <span id="totalEstime" class="fs-5 fw-bold">0 FBU</span>
+        </div>
+
+        <h6 class="mb-3 mt-4 border-bottom pb-2">
+            <i class="fa fa-comment"></i> Notes et Demandes
+        </h6>
+
+        <div class="mb-3">
+            {{ form.demandes_speciales.label_tag }}
+            {{ form.demandes_speciales }}
+        </div>
+        <div class="mb-3">
+        {{ form.notes.label_tag }}
+        {{ form.notes }}
+    </div>
+</div>

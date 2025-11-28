@@ -1,7 +1,7 @@
 # chambres/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import TypeChambre
+from .models import TypeChambre, Chambre, MaintenanceChambre
 
 
 @admin.register(TypeChambre)
@@ -60,3 +60,16 @@ class TypeChambreAdmin(admin.ModelAdmin):
             'description': 'Séparez par des virgules : WiFi, TV, Climatisation...'
         }),
     )
+
+@admin.register(Chambre)
+class ChambreAdmin(admin.ModelAdmin):
+    list_display = ('numero', 'type_chambre', 'etage', 'statut')
+    list_filter = ('statut', 'etage', 'type_chambre')
+    search_fields = ('numero', 'type_chambre__nom')
+    ordering = ('numero',)
+
+@admin.register(MaintenanceChambre)
+class MaintenanceChambreAdmin(admin.ModelAdmin):
+    list_display = ('chambre', 'statut', 'priorite', 'date_signalement')
+    list_filter = ('statut', 'priorite')
+    search_fields = ('chambre__numero', 'probleme')

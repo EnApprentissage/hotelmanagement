@@ -1,0 +1,97 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Arrivées du jour{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Réservations</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+<div class="body flex-grow-1 px-3">
+  <div class="container-lg">
+    <div class="row mb-4">
+      <div class="col">
+        <h3 class="mb-0">
+          <i class="cil-people text-success me-2"></i>
+          Arrivées prévues aujourd'hui – {{ today|date:"l d F Y" }}
+        </h3>
+        <small class="text-muted">{{ arrivees.count }} réservation{{ arrivees.count|pluralize }}</small>
+      </div>
+      <div class="col-auto">
+        <a href="{% url 'reservations:reservation_list' %}" class="btn btn-light">
+          <i class="cil-arrow-left"></i> Retour
+        </a>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="cil-flight-takeoff"></i> Clients attendus</h5>
+      </div>
+      <div class="card-body p-0">
+        {% for r in arrivees %}
+          <div class="p-3 border-bottom {% if r.statut == 'en_cours' %}bg-light{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-3">
+                  <div>
+                    <strong class="fs-5">{{ r.client.nom_complet }}</strong>
+                    <br>
+                    <small class="text-muted">
+                      <i class="cil-phone"></i> {{ r.client.phone|default:"Non renseigné" }}
+                    </small>
+                  </div>
+                  <div class="ms-4">
+                    <span class="badge bg-primary fs-6">Chambre {{ r.chambre.numero }}</span>
+                    <span class="badge bg-info">{{ r.chambre.type_chambre.nom }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-end">
+                {% if r.statut == 'en_cours' %}
+                  <span class="badge bg-success fs-6">
+                    <i class="cil-check-alt"></i> Check-in effectué
+                  </span>
+                {% elif r.statut == 'annulee' %}
+                  <span class="badge bg-danger">Annulée</span>
+                {% elif r.statut == 'no_show' %}
+                  <span class="badge bg-dark">No-show</span>
+                {% else %}
+                  {% if reservation.statut == 'en_cours' %}
+                <span class="badge bg-success fs-6">
+                    <i class="cil-check-alt"></i> Check-in {{ reservation.date_checkin|time:"H\\hi" }}
+                </span>
+                {% else %}
+                <a href="{% url 'reservations:check_in' reservation.pk %}"
+                    class="btn btn-success btn-sm shadow-sm">
+                    <i class="cil-check-circle"></i> Check-in
+                </a>
+                {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center py-5 text-muted">
+            <i class="cil-sun display-1 opacity-25"></i>
+            <p class="mt-3 fs-4">Aucune arrivée prévue aujourd'hui</p>
+            <a href="{% url 'reservations:reservation_create' %}" class="btn btn-primary">
+              <i class="cil-plus"></i> Créer une réservation
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

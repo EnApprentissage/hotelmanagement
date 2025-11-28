@@ -30,6 +30,8 @@ class Client(models.Model):
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True)
+    is_locked = models.BooleanField(default=False, verbose_name="Fiche verrouillée") 
+    is_active = models.BooleanField(default=True)
     
     class Meta:
         db_table = 'clients'
@@ -58,7 +60,8 @@ class HistoriqueClient(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     description = models.TextField()
     montant = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
+    is_locked = models.BooleanField(default=False, verbose_name="Fiche verrouillée") 
+    is_active = models.BooleanField(default=True)
     class Meta:
         db_table = 'historique_clients'
         ordering = ['-date']

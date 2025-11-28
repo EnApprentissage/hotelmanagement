@@ -1,0 +1,140 @@
+<div class="row">
+    <!-- ================== COLONNE 1 ================== -->
+    <div class="col-md-6">
+        <h6 class="mb-3">Informations personnelles</h6>
+
+        <div class="mb-3">
+            <label class="form-label">Civilité <span class="text-danger">*</span></label>
+            <select name="civilite" class="form-select" required>
+                <option value="M" {% if form.civilite.value == 'M' %}selected{% endif %}>Monsieur</option>
+                <option value="Mme" {% if form.civilite.value == 'Mme' %}selected{% endif %}>Madame</option>
+                <option value="Mlle" {% if form.civilite.value == 'Mlle' %}selected{% endif %}>Mademoiselle</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            {{ form.nom.label_tag }}
+            {{ form.nom }}
+            {% if form.nom.errors %}
+                <div class="text-danger">{{ form.nom.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.prenom.label_tag }}
+            {{ form.prenom }}
+            {% if form.prenom.errors %}
+                <div class="text-danger">{{ form.prenom.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div class="text-danger">{{ form.email.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.phone.label_tag }}
+            {{ form.phone }}
+            {% if form.phone.errors %}
+                <div class="text-danger">{{ form.phone.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.ville.label_tag }}
+            {{ form.ville }}
+            {% if form.ville.errors %}
+                <div class="text-danger">{{ form.ville.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.pays.label_tag }}
+            {{ form.pays }}
+            {% if form.pays.errors %}
+                <div class="text-danger">{{ form.pays.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.adresse.label_tag }}
+            {{ form.adresse }}
+            {% if form.adresse.errors %}
+                <div class="text-danger">{{ form.adresse.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.nationalite.label_tag }}
+            {{ form.nationalite }}
+            {% if form.nationalite.errors %}
+                <div class="text-danger">{{ form.nationalite.errors }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ================== COLONNE 2 ================== -->
+    <div class="col-md-6">
+        <h6 class="mb-3">Documents & préférences</h6>
+
+        <div class="mb-3">
+            {{ form.type_piece.label_tag }}
+            {{ form.type_piece }}
+            {% if form.type_piece.errors %}
+                <div class="text-danger">{{ form.type_piece.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.numero_piece.label_tag }}
+            {{ form.numero_piece }}
+            {% if form.numero_piece.errors %}
+                <div class="text-danger">{{ form.numero_piece.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.piece_identite.label_tag }}
+            {{ form.piece_identite }}
+            {% if form.piece_identite.errors %}
+                <div class="text-danger">{{ form.piece_identite.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.type_chambre_prefere.label_tag }}
+            {{ form.type_chambre_prefere }}
+            {% if form.type_chambre_prefere.errors %}
+                <div class="text-danger">{{ form.type_chambre_prefere.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.preferences_speciales.label_tag }}
+            {{ form.preferences_speciales }}
+            {% if form.preferences_speciales.errors %}
+                <div class="text-danger">{{ form.preferences_speciales.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.notes.label_tag }}
+            {{ form.notes }}
+            {% if form.notes.errors %}
+                <div class="text-danger">{{ form.notes.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.photo.label_tag }}
+            {{ form.photo }}
+            {% if form.photo.errors %}
+                <div class="text-danger">{{ form.photo.errors }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>

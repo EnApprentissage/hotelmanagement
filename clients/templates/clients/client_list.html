@@ -1,0 +1,698 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Clients{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .client-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+  }
+  .badge-status {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+  }
+  .locked-row {
+    background-color: #fff3cd !important;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Clients</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="mb-0">
+        <i class="fa fa-users me-2 text-primary"></i> Liste des Clients
+      </h5>
+      <button type="button" class="btn btn-sm btn-primary js-create-entity" title="Ajouter nouveau client"
+        data-url="{% url 'clients:client_create' %}">
+        <i class="cil-user-plus"></i> Nouveau Client
+      </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-md-10">
+            <input type="text" 
+                   name="search" 
+                   class="form-control form-control-sm"
+                   placeholder="🔍 Rechercher par nom, prénom, email, téléphone ou adresse..."
+                   value="{{ search }}">
+          </div>
+            <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-primary" title="filtre">
+              <i class="cil-magnifying-glass"></i> 
+            </button>
+            <a href="{% url 'clients:client_list' %}" class="btn btn-sm btn-secondary" title="initialise">
+              <i class="cil-loop-circular"></i>
+            </a>
+          </div>
+    
+        </form>
+      </div>
+    </div>
+
+    <!-- Tableau -->
+    <div class="card"> 
+      <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+        <div class="d-flex align-items-center gap-2">
+          <i class="icon ico-xxl cil-group"></i>
+          <h5 class="card-title mb-0">Clients</h5>
+        </div>
+        <span class="badge bg-light text-dark">{{ page_obj.paginator.count }} client(s)</span>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead>
+              <tr>
+                <th class="text-center">N°</th>
+                <th>Client</th>
+                <th>Contact</th>
+                <th>Localisation</th>
+                <th class="text-center">N° Pièce</th>
+                <th class="text-center">Statut</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for client in clients %}
+                <tr {% if client.is_locked %}class="locked-row"{% endif %}>
+                  <td class="text-center">
+                    {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+                  </td>
+                  
+                  <!-- Client -->
+                  <td>
+                    <div class="fw-medium">
+                      <span class="badge bg-secondary me-1">{{ client.get_civilite_display }}</span>
+                      {{ client.nom }} {{ client.prenom }}
+                    </div>
+                    {% if client.date_naissance %}
+                      <small class="text-muted">
+                        <i class="fa fa-birthday-cake"></i> {{ client.date_naissance|date:"d/m/Y" }}
+                      </small>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Contact -->
+                  <td>
+                    <small>
+                      <div>
+                        <i class="fa fa-phone text-muted"></i> 
+                        {{ client.phone|default:"—" }}
+                      </div>
+                      {% if client.email %}
+                        <div>
+                          <i class="fa fa-envelope text-muted"></i> 
+                          {{ client.email }}
+                        </div>
+                      {% endif %}
+                    </small>
+                  </td>
+                  
+                  <!-- Localisation -->
+                  <td>
+                    <small>
+                      {% if client.adresse %}
+                        <div>
+                          <i class="fa fa-map-marker text-muted"></i> 
+                          {{ client.adresse|truncatewords:5 }}
+                        </div>
+                      {% endif %}
+                      {% if client.ville %}
+                        <div class="text-muted">{{ client.ville }}</div>
+                      {% endif %}
+                      {% if client.pays %}
+                        <div>
+                          <i class="fa fa-flag text-muted"></i> 
+                          {{ client.pays }}
+                        </div>
+                      {% endif %}
+                      {% if not client.adresse and not client.ville and not client.pays %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </small>
+                  </td>
+                  
+                  <!-- N° Pièce -->
+                  <td class="text-center">
+                    {% if client.numero_piece %}
+                      <small class="badge bg-info">{{ client.numero_piece }}</small>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Statut -->
+                  <td class="text-center">
+                    {% if client.is_locked %}
+                      <span class="badge bg-warning text-dark" title="Fiche verrouillée">
+                        <i class="fas fa-lock"></i> Verrouillé
+                      </span>
+                    {% else %}
+                      <span class="badge bg-success" title="Fiche modifiable">
+                        <i class="fas fa-unlock"></i> Actif
+                      </span>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Actions -->
+                  <td class="text-center">
+                    
+                    <!-- Voir détails -->
+                    <a href="{% url 'clients:client_detail' client.pk %}" 
+                       class="btn btn-sm text-info" 
+                       title="Voir détails">
+                      <i class="icon cil-folder-open"></i>
+                    </a>
+
+                    {% if client.is_locked %}
+                      <!-- CLIENT VERROUILLÉ -->
+                      {% if user.is_staff or user.is_superuser %}
+                        <!-- Manager : peut déverrouiller -->
+                        <button type="button" 
+                                class="btn btn-sm text-warning js-unlock-client" 
+                                title="🔓 Déverrouiller cette fiche"
+                                data-url="{% url 'clients:client_update' client.pk %}"
+                                data-client-id="{{ client.pk }}"
+                                data-client-name="{{ client.nom_complet }}">
+                          <i class="fas fa-unlock"></i>
+                        </button>
+                      {% else %}
+                        <!-- Non-manager : bouton grisé -->
+                        <button type="button" 
+                                class="btn btn-sm text-muted" 
+                                title="Fiche verrouillée - Seul un manager peut déverrouiller"
+                                disabled>
+                          <i class="fas fa-lock"></i>
+                        </button>
+                      {% endif %}
+                    {% else %}
+                      <!-- CLIENT NON VERROUILLÉ : bouton modifier normal -->
+                      <button type="button" 
+                              class="btn btn-sm text-primary js-update-entity" 
+                              title="Modifier"
+                              data-url="{% url 'clients:client_update' client.pk %}">
+                        <i class="icon cil-pencil"></i>
+                      </button>
+                    {% endif %}
+                    
+                    <!-- Bouton Supprimer -->
+                    {% if not client.is_locked %}
+                      <button type="button" 
+                              class="btn btn-sm text-danger delete-btn" 
+                              title="Supprimer"
+                              data-url="{% url 'clients:client_delete' client.pk %}"
+                              data-name="{{ client.nom_complet }}">
+                        <i class="icon cil-trash"></i>
+                      </button>
+                    {% else %}
+                      <button type="button" 
+                              class="btn btn-sm text-muted" 
+                              title="Impossible de supprimer une fiche verrouillée"
+                              disabled>
+                        <i class="icon cil-trash"></i>
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa fa-users fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-3">Aucun client trouvé</p>
+                    {% if search %}
+                      <a href="{% url 'clients:client_list' %}" class="btn btn-sm btn-secondary me-2">
+                        <i class="fa fa-times"></i> Effacer la recherche
+                      </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-primary js-create-entity"
+                      data-url="{% url 'clients:client_create' %}">
+                      <i class="fa fa-plus"></i> Ajouter un client
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">«</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">‹</a>
+          </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+          <span class="page-link">
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+        </li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">»</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("=== Script Client List chargé ===");
+    
+    // ========================================
+    // DÉVERROUILLAGE CLIENT (Manager uniquement)
+    // ========================================
+    $(document).on("click", ".js-unlock-client", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const btn = $(this);
+        const url = btn.data('url');
+        const clientName = btn.data('client-name');
+        const clientId = btn.data('client-id');
+        
+        console.log("=== Tentative de déverrouillage ===", clientName);
+        
+        Swal.fire({
+            title: '🔓 Déverrouiller la fiche ?',
+            html: `
+                <p class="mb-3">Vous êtes sur le point de <strong>déverrouiller</strong> la fiche de :</p>
+                <p class="fs-5 fw-bold text-primary">${clientName}</p>
+                <hr>
+                <ul class="text-start">
+                    <li>La fiche redeviendra <strong>modifiable</strong></li>
+                    <li>Tous les utilisateurs pourront la modifier</li>
+                    <li>Elle pourra être à nouveau verrouillée plus tard</li>
+                </ul>
+                <p class="mt-3">Confirmer le déverrouillage ?</p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-unlock"></i> Oui, déverrouiller',
+            cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Effectuer le déverrouillage
+                Swal.fire({
+                    title: 'Déverrouillage en cours...',
+                    html: 'Veuillez patienter',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: {
+                        'unlock': 'true',
+                        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        console.log("=== Réponse déverrouillage ===", data);
+                        
+                        if (data.success && data.unlocked) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '🔓 Déverrouillé !',
+                                text: data.message || `La fiche de ${clientName} a été déverrouillée avec succès.`,
+                                timer: 2000,
+                                showConfirmButton: true
+                            }).then(() => {
+                                // Recharger la page pour mettre à jour l'affichage
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erreur !',
+                                text: data.error || 'Impossible de déverrouiller la fiche.'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error("Erreur AJAX:", xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erreur !',
+                            text: 'Une erreur est survenue lors du déverrouillage.'
+                        });
+                    }
+                });
+            }
+        });
+    });
+    
+    // ========================================
+    // SUPPRESSION AVEC SWEETALERT2
+    // ========================================
+    const attachDeleteListeners = () => {
+        const deleteButtons = document.querySelectorAll(".delete-btn");
+        
+        deleteButtons.forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const url = newBtn.dataset.url;
+                const nom = newBtn.dataset.name;
+                
+                Swal.fire({
+                    title: `Supprimer ${nom} ?`,
+                    text: "Cette action est irréversible !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                    reverseButtons: true
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Suppression en cours...',
+                            html: 'Veuillez patienter',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                            },
+                        })
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if(data.form_is_valid || data.success){
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Supprimé !",
+                                    text: "Le client a été supprimé avec succès.",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else if (data.error) {
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Impossible !",
+                                    text: data.error
+                                });
+                            } else {
+                                Swal.fire("Erreur !", "Impossible de supprimer.", "error");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Erreur:", error);
+                            Swal.fire("Erreur !", "Une erreur est survenue.", "error");
+                        });
+                    }
+                });
+            });
+        });
+    };
+    
+    attachDeleteListeners();
+    
+    // ========================================
+    // MODAL AJAX (Create/Update)
+    // ========================================
+    var idModalEntity = "#modal-entity";
+    var clCreateEntity = ".js-create-entity";
+    var clUpdateEntity = ".js-update-entity";
+
+    // Charger le formulaire dans la modal
+    function loadForm() {
+        var btn = $(this);
+        console.log("=== Chargement du formulaire client ===");
+        
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Chargement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                Swal.close();
+                console.log("=== Formulaire chargé ===", data);
+                
+                if (data.error) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Attention !",
+                        text: data.error,
+                    });
+                } else if (data.is_locked) {
+                    // Afficher le formulaire en lecture seule
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                    $(idModalEntity).modal('show');
+                } else {
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                    $(idModalEntity).modal('show');
+                    
+                    // Attacher les événements
+                    attachFormButtonListeners();
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                console.error("Erreur chargement:", xhr);
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Impossible de charger le formulaire.",
+                });
+            }
+        });
+    }
+
+    // Attacher les événements sur les boutons du formulaire
+    function attachFormButtonListeners() {
+        console.log("=== Attachement des événements des boutons ===");
+        
+        // Bouton "Mettre à jour" normal
+        $(idModalEntity).find('.btn-update-normal').off('click').on('click', function(e) {
+            e.preventDefault();
+            console.log("=== Bouton 'Mettre à jour' cliqué ===");
+            submitFormAjax(false);
+        });
+        
+        // Bouton "Valider et Verrouiller"
+        $(idModalEntity).find('.btn-validate-lock').off('click').on('click', function(e) {
+            e.preventDefault();
+            console.log("=== Bouton 'Valider et Verrouiller' cliqué ===");
+            
+            Swal.fire({
+                title: '⚠️ Attention !',
+                html: `
+                    <p class="mb-3"><strong>Cette action verrouillera la fiche.</strong></p>
+                    <ul class="text-start">
+                        <li>Une fois verrouillée, seul un <strong>manager</strong> pourra la déverrouiller</li>
+                        <li>Les utilisateurs normaux ne pourront plus la modifier</li>
+                        <li>Vous pourrez toujours la déverrouiller plus tard si nécessaire</li>
+                    </ul>
+                    <p class="mt-3">Voulez-vous verrouiller cette fiche ?</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-lock"></i> Oui, verrouiller',
+                cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("=== Confirmation du verrouillage ===");
+                    submitFormAjax(true);
+                }
+            });
+        });
+    }
+    
+    // Soumettre le formulaire via AJAX
+    function submitFormAjax(isLock) {
+        var form = $(idModalEntity).find('form');
+        var formData = new FormData(form[0]);
+        
+        var btnUpdate = $(idModalEntity).find('.btn-update-normal');
+        var btnLock = $(idModalEntity).find('.btn-validate-lock');
+        
+        if (isLock) {
+            btnLock.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Verrouillage...');
+            btnUpdate.prop('disabled', true);
+        } else {
+            btnUpdate.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> En cours...');
+            if (btnLock.length) btnLock.prop('disabled', true);
+        }
+        
+        // Ajouter le paramètre validate_lock si nécessaire
+        if (isLock) {
+            formData.append('validate_lock', 'true');
+            console.log("=== Paramètre validate_lock ajouté ===");
+        }
+        
+        console.log("=== Soumission AJAX ===");
+        console.log("URL:", form.attr("action"));
+        console.log("IsLock:", isLock);
+        
+        $.ajax({
+            url: form.attr("action"),
+            data: formData,
+            type: 'POST',
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            cache: false,
+            beforeSend: function() {
+                Swal.fire({
+                    title: isLock ? '🔒 Verrouillage en cours...' : 'Enregistrement...',
+                    html: 'Veuillez patienter',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                console.log("=== Réponse reçue ===", data);
+                
+                if (data.form_is_valid === true || data.success === true) {
+                    var message = data.message || "L'opération a été effectuée avec succès.";
+                    var icon = data.locked ? "success" : "success";
+                    var title = data.locked ? "🔒 Verrouillé !" : "✅ Succès !";
+                    
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        text: message,
+                        showConfirmButton: true,
+                        confirmButtonText: 'OK',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
+                        console.log("=== Fermeture et rechargement ===");
+                        
+                        // Fermer la modal
+                        $(idModalEntity).modal('hide');
+                        $('.modal-backdrop').remove();
+                        $('body').removeClass('modal-open');
+                        
+                        // Recharger la page
+                        window.location.reload();
+                    });
+                } else if (data.error) {
+                    Swal.close();
+                    
+                    btnUpdate.prop('disabled', false).html('<i class="fas fa-save"></i> Mettre à jour');
+                    if (btnLock.length) btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                    
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Impossible !",
+                        text: data.error,
+                    }).then(() => {
+                        if (data.is_locked) {
+                            $(idModalEntity).modal('hide');
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open');
+                        }
+                    });
+                } else {
+                    // Formulaire invalide : réafficher avec les erreurs
+                    Swal.close();
+                    $(idModalEntity + " .modal-content").html(data.html_form);
+                    attachFormButtonListeners();
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.close();
+                
+                btnUpdate.prop('disabled', false).html('<i class="fas fa-save"></i> Mettre à jour');
+                if (btnLock.length) btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                
+                console.error("Erreur AJAX:", xhr, status, error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    html: `<p>Erreur lors de la sauvegarde.</p>
+                           <small>Code: ${xhr.status}</small>`,
+                });
+            }
+        });
+    }
+
+    // Attacher les événements principaux
+    $(document).on("click", clCreateEntity, loadForm);
+    $(document).on("click", clUpdateEntity, loadForm);
+});
+</script>
+{% endblock extra_js %}

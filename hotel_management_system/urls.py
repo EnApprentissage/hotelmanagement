@@ -24,6 +24,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('admin_coreui.urls')),
     path('staff/', include('staff.urls')),
+    path('clients/', include('clients.urls')),
+    path('reservations/', include('reservations.urls')),
+    path('chambres/', include('chambres.urls')),
+    
 ]
 
 if settings.DEBUG:

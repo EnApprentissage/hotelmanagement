@@ -1,16 +1,50 @@
-<form method="post" action="{% url 'staff:employe_update' form.instance.pk %}" class="js-entity-update-form">
+<!-- Modal pour modification d'un employé -->
+<form method="post" action="{% url 'staff:employe_update' form.instance.pk %}" class="js-entity-update-form" id="form-employe-update">
     {% csrf_token %}
+    
     <div class="modal-header bg-primary">
         <h5 class="modal-title">
-            <i class="fas fa-edit"></i> Mettre à jour l'Employé
+            {% if object.is_locked %}
+                <i class="fas fa-lock"></i> Fiche Employé Verrouillée
+            {% else %}
+                <i class="fas fa-edit"></i> Mettre à jour l'Employé
+            {% endif %}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
+    
     <div class="modal-body">
+        {% if object.is_locked %}
+            <div class="alert alert-warning mb-3">
+                <i class="fas fa-lock"></i> 
+                <strong>Fiche verrouillée</strong> - Cette fiche ne peut plus être modifiée.
+            </div>
+        {% endif %}
+        
         {% include 'staff/employe_form.html' %}
     </div>
+    
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+        {% if object.is_locked %}
+            <!-- 🔒 FICHE VERROUILLÉE -->
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+        {% else %}
+            <!-- ✏️ FICHE NON VERROUILLÉE -->
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Annuler
+            </button>
+            
+            <!-- Bouton Mettre à jour normal -->
+            <button type="button" class="btn btn-primary btn-update-normal">
+                <i class="fas fa-save"></i> Mettre à jour
+            </button>
+            
+            <!-- Bouton Valider et Verrouiller -->
+            <button type="button" class="btn btn-success btn-validate-lock">
+                <i class="fas fa-lock"></i> Valider et Verrouiller
+            </button>
+        {% endif %}
     </div>
 </form>
