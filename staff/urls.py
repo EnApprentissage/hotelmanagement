@@ -1,4 +1,6 @@
 from django.urls import path
+
+from accounts import views
 from .views import (
     CongeDeleteView,
     CongeDetailView,
@@ -26,6 +28,7 @@ from .views import (
     IncidentCreateView,
     IncidentUpdateView,
     IncidentDeleteView,
+    employe_documents_upload
 )
 
 app_name = 'staff'
@@ -36,6 +39,7 @@ urlpatterns = [
     path('employes/add/', EmployeCreateView.as_view(), name='employe_create'),
     path('employes/<int:pk>/edit/', EmployeUpdateView.as_view(), name='employe_update'),
     path('employes/<int:pk>/delete/', EmployeDeleteView.as_view(), name='employe_delete'),
+    path('employes/<int:pk>/upload-documents/', employe_documents_upload, name='employe_documents_upload'),
     
     # Planning URLs
     path('planning/', PlanningListView.as_view(), name='planning_list'),

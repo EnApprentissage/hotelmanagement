@@ -1,0 +1,280 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Chambres à Nettoyer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cleaning-card {
+        border-left: 4px solid;
+        transition: transform 0.2s;
+    }
+    .cleaning-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .cleaning-card.sale {
+        border-left-color: #dc3545;
+    }
+    .cleaning-card.en-cours {
+        border-left-color: #17a2b8;
+    }
+    .cleaning-card.propre {
+        border-left-color: #28a745;
+    }
+    .chambre-numero {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #321fdb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+    <header class="header header-sticky p-0 mb-4">
+        {% include 'includes/navbar.html' %}
+        <div class="container-fluid px-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb my-0">
+                    <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'chambres:chambre_list' %}">Chambres</a></li>
+                    <li class="breadcrumb-item active">Nettoyage</li>
+                </ol>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container-fluid px-4 py-3">
+        <!-- En-tête -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="mb-0">
+                    <i class="cil-brush me-2 text-primary"></i> Nettoyage des Chambres
+                </h3>
+                <p class="text-muted mb-0">Interface pour le personnel de ménage</p>
+            </div>
+            <div>
+                <span class="badge bg-danger fs-5 me-2">
+                    {{ total_a_nettoyer }} à nettoyer
+                </span>
+                <a href="{% url 'chambres:chambre_list' %}" class="btn btn-secondary">
+                    <i class="cil-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h3 class="mb-0">{{ chambres_sales.count }}</h3>
+                                <p class="mb-0">À nettoyer</p>
+                            </div>
+                            <i class="cil-warning fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h3 class="mb-0">{{ chambres_en_cours.count }}</h3>
+                                <p class="mb-0">En cours</p>
+                            </div>
+                            <i class="cil-brush fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h3 class="mb-0">{{ chambres_propres.count }}</h3>
+                                <p class="mb-0">Terminées</p>
+                            </div>
+                            <i class="cil-check-circle fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Chambres SALES (à nettoyer) -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="cil-warning"></i> À nettoyer ({{ chambres_sales.count }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for chambre in chambres_sales %}
+                        <div class="card cleaning-card sale mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="chambre-numero">{{ chambre.numero }}</div>
+                                        <div class="text-muted">
+                                            {{ chambre.type_chambre.nom }} - Étage {{ chambre.etage }}
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-info btn-start-cleaning"
+                                            data-chambre-id="{{ chambre.pk }}"
+                                            data-chambre-numero="{{ chambre.numero }}">
+                                        <i class="cil-brush"></i> Commencer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="cil-check-circle fs-1 mb-2"></i>
+                            <p>Aucune chambre à nettoyer !</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chambres EN COURS DE NETTOYAGE -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="cil-brush"></i> En cours ({{ chambres_en_cours.count }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for chambre in chambres_en_cours %}
+                        <div class="card cleaning-card en-cours mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="chambre-numero">{{ chambre.numero }}</div>
+                                        <div class="text-muted">
+                                            {{ chambre.type_chambre.nom }} - Étage {{ chambre.etage }}
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-success btn-finish-cleaning"
+                                            data-chambre-id="{{ chambre.pk }}"
+                                            data-chambre-numero="{{ chambre.numero }}">
+                                        <i class="cil-check-circle"></i> Terminé
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="cil-info fs-1 mb-2"></i>
+                            <p>Aucun nettoyage en cours</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chambres PROPRES (dernières terminées) -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="cil-check-circle"></i> Chambres propres ({{ chambres_propres.count }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for chambre in chambres_propres %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card cleaning-card propre">
+                            <div class="card-body text-center">
+                                <div class="chambre-numero text-success">{{ chambre.numero }}</div>
+                                <div class="text-muted small">{{ chambre.type_chambre.nom }}</div>
+                                <i class="cil-check-circle text-success fs-3 mt-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">
+                        <p>Aucune chambre propre pour le moment</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Commencer le nettoyage
+    document.querySelectorAll('.btn-start-cleaning').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chambreId = this.dataset.chambreId;
+            const chambreNumero = this.dataset.chambreNumero;
+            updateChambreStatus(chambreId, 'en_nettoyage', 'Nettoyage commencé', chambreNumero);
+        });
+    });
+
+    // Terminer le nettoyage
+    document.querySelectorAll('.btn-finish-cleaning').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chambreId = this.dataset.chambreId;
+            const chambreNumero = this.dataset.chambreNumero;
+            updateChambreStatus(chambreId, 'propre', 'Chambre propre', chambreNumero);
+        });
+    });
+
+    function updateChambreStatus(chambreId, newStatut, successMessage, chambreNumero) {
+        Swal.fire({
+            title: 'Mise à jour...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch(`/chambres/chambres/${chambreId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ statut: newStatut })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Succès !',
+                    text: `${successMessage} - Chambre ${chambreNumero}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire('Erreur', data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            Swal.fire('Erreur', 'Une erreur est survenue', 'error');
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -21,6 +21,10 @@ from .forms import (
 )
 from .template import   StaffTemplate
 
+import os
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+
 
 # ==================== EMPLOYE ====================
 class EmployeListView(ListView):
@@ -296,17 +300,132 @@ class EmployeUpdateView(BaseAjaxUpdateView):
                 form.fields[field].widget.attrs['readonly'] = True
         return form
 
+    def get_context_data(self, **kwargs):
+        """Ajouter les informations des fichiers au contexte"""
+        context = super().get_context_data(**kwargs)
+        employe = self.object
+        
+        # VÉRIFICATION SIMPLIFIÉE ET FIABLE DES FICHIERS
+        print(f"\n{'='*60}")
+        print(f"VÉRIFICATION DES FICHIERS - Employé ID: {employe.pk}")
+        print(f"{'='*60}")
+        
+        # Fonction de vérification simplifiée
+        def verifier_fichier_simple(fichier, nom_fichier):
+            """Vérification simple mais fiable"""
+            if not fichier:
+                print(f"❌ {nom_fichier}: Objet fichier None")
+                return False
+            
+            try:
+                # Vérifier si le fichier a un nom non vide
+                if not hasattr(fichier, 'name') or not fichier.name:
+                    print(f"❌ {nom_fichier}: Pas de nom de fichier")
+                    return False
+                
+                # Vérifier si le nom n'est pas vide
+                if fichier.name.strip() == '':
+                    print(f"❌ {nom_fichier}: Nom de fichier vide")
+                    return False
+                
+                # Si on a un nom de fichier non vide, considérer comme présent
+                print(f"✅ {nom_fichier}: {fichier.name}")
+                return True
+                
+            except Exception as e:
+                print(f"❌ {nom_fichier}: Erreur - {str(e)}")
+                return False
+        
+        # Vérifier les trois fichiers
+        photo_presente = verifier_fichier_simple(employe.photo, "Photo")
+        cv_present = verifier_fichier_simple(employe.cv, "CV")
+        contrat_present = verifier_fichier_simple(employe.contrat, "Contrat")
+        
+        # Déterminer si tous les fichiers sont présents
+        fichiers_complets = photo_presente and cv_present and contrat_present
+        
+        # Liste des fichiers manquants
+        fichiers_manquants = []
+        if not photo_presente:
+            fichiers_manquants.append("Photo")
+        if not cv_present:
+            fichiers_manquants.append("CV")
+        if not contrat_present:
+            fichiers_manquants.append("Contrat")
+        
+        print(f"\n📊 RÉSULTAT:")
+        print(f"   • Photo: {'✅ Présente' if photo_presente else '❌ Absente'}")
+        print(f"   • CV: {'✅ Présent' if cv_present else '❌ Absent'}")
+        print(f"   • Contrat: {'✅ Présent' if contrat_present else '❌ Absent'}")
+        print(f"   • Fichiers complets: {'✅ OUI' if fichiers_complets else '❌ NON'}")
+        print(f"   • Fichiers manquants: {fichiers_manquants if fichiers_manquants else 'Aucun'}")
+        print(f"{'='*60}\n")
+        
+        # Passer les informations au template
+        context['fichiers_complets'] = fichiers_complets
+        context['fichiers_manquants'] = fichiers_manquants
+        
+        # Ajouter aussi l'ID de l'employé pour le JavaScript
+        context['employe_id'] = employe.pk
+        
+        return context
+
     def post(self, request, *args, **kwargs):
         """Soumission AJAX de la modification"""
         self.object = self.get_object()
         
         print("=== POST REQUEST ===")
-        print("POST data:", request.POST)
+        print(f"Employé: {self.object.nom} {self.object.prenom} (ID: {self.object.pk})")
+        print("POST data keys:", list(request.POST.keys()))
         print("validate_lock présent?", 'validate_lock' in request.POST)
+        print("FILES présents:", bool(request.FILES))
         
         # 🔒 DÉTECTER LE BOUTON "Valider et Verrouiller"
         if 'validate_lock' in request.POST:
             print("=== VERROUILLAGE DÉTECTÉ ===")
+            
+            # Vérification simple des fichiers
+            def fichier_present(fichier):
+                return bool(fichier and hasattr(fichier, 'name') and fichier.name)
+            
+            photo_present = fichier_present(self.object.photo)
+            cv_present = fichier_present(self.object.cv)
+            contrat_present = fichier_present(self.object.contrat)
+            
+            print(f"État fichiers - Photo: {photo_present}, CV: {cv_present}, Contrat: {contrat_present}")
+            
+            # Vérifier que les 3 fichiers sont présents
+            if not (photo_present and cv_present and contrat_present):
+                fichiers_manquants = []
+                if not photo_present:
+                    fichiers_manquants.append("Photo")
+                if not cv_present:
+                    fichiers_manquants.append("CV")
+                if not contrat_present:
+                    fichiers_manquants.append("Contrat")
+                
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': f'❌ Impossible de verrouiller : Documents manquants ({", ".join(fichiers_manquants)})',
+                })
+            
+            # Vérifier que tous les champs obligatoires sont remplis
+            form = self.get_form()
+            if not form.is_valid():
+                erreurs = []
+                for champ, messages in form.errors.items():
+                    # Récupérer le nom du champ
+                    nom_champ = form.fields[champ].label if champ in form.fields else champ
+                    erreurs.append(f"{nom_champ}: {', '.join(messages)}")
+                
+                return JsonResponse({
+                    'form_is_valid': False,
+                    'success': False,
+                    'error': f'❌ Impossible de verrouiller :\n' + '\n'.join(erreurs),
+                })
+            
+            # Si tout est bon, verrouiller
             self.object.is_locked = True
             self.object.save(update_fields=['is_locked'])
             print(f"=== Employé {self.object.pk} verrouillé ===")
@@ -341,9 +460,35 @@ class EmployeUpdateView(BaseAjaxUpdateView):
 
     def form_invalid(self, form):
         """Retourner le formulaire avec erreurs"""
+        # Recalculer l'état des fichiers pour le template
+        employe = self.object
+        
+        def fichier_present(fichier):
+            return bool(fichier and hasattr(fichier, 'name') and fichier.name)
+        
+        fichiers_complets = (
+            fichier_present(employe.photo) and 
+            fichier_present(employe.cv) and 
+            fichier_present(employe.contrat)
+        )
+        
+        fichiers_manquants = []
+        if not fichier_present(employe.photo):
+            fichiers_manquants.append("Photo")
+        if not fichier_present(employe.cv):
+            fichiers_manquants.append("CV")
+        if not fichier_present(employe.contrat):
+            fichiers_manquants.append("Contrat")
+        
         html_form = render_to_string(
             self.template_name,
-            {'form': form, 'object': self.object},
+            {
+                'form': form, 
+                'object': self.object,
+                'fichiers_complets': fichiers_complets,
+                'fichiers_manquants': fichiers_manquants,
+                'employe_id': self.object.pk
+            },
             request=self.request
         )
 
@@ -1485,3 +1630,23 @@ class IncidentDeleteView(DeleteView):
         incident = self.get_object()
         incident.delete()
         return JsonResponse({'success': True})
+    
+    
+from .forms import EmployeDocumentsForm
+
+def employe_documents_upload(request, pk):
+    obj = get_object_or_404(Employe, pk=pk)
+
+    if request.method == "POST":
+        form = EmployeDocumentsForm(request.POST, request.FILES, instance=obj)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({"success": True, "message": "Documents mis à jour avec succès"})
+        else:
+            return JsonResponse({"success": False, "message": "Formulaire invalide", "errors": form.errors})
+
+    else:
+        context = {"employe": obj}
+        data = dict()
+        data["html_form"] = render_to_string("staff/employe_form_upload.html", context, request=request)
+        return JsonResponse(data)

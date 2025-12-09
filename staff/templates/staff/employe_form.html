@@ -126,13 +126,6 @@
             {% endif %}
         </div>
         
-        <div class="mb-3">
-            {{ form.salaire.label_tag }}
-            {{ form.salaire }}
-            {% if form.salaire.errors %}
-                <div class="text-danger">{{ form.salaire.errors }}</div>
-            {% endif %}
-        </div>
         
         <div class="mb-3">
             {{ form.cv.label_tag }}
@@ -162,14 +155,6 @@
         <h6 class="mb-3">Contact d'urgence</h6>
         
         <div class="mb-3">
-            {{ form.contact_urgence_nom.label_tag }}
-            {{ form.contact_urgence_nom }}
-            {% if form.contact_urgence_nom.errors %}
-                <div class="text-danger">{{ form.contact_urgence_nom.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="mb-3">
             {{ form.contact_urgence_phone.label_tag }}
             {{ form.contact_urgence_phone }}
             {% if form.contact_urgence_phone.errors %}
@@ -177,12 +162,6 @@
             {% endif %}
         </div>
         
-        <div class="mb-3">
-            {{ form.contact_urgence_relation.label_tag }}
-            {{ form.contact_urgence_relation }}
-            {% if form.contact_urgence_relation.errors %}
-                <div class="text-danger">{{ form.contact_urgence_relation.errors }}</div>
-            {% endif %}
-        </div>
+        
     </div>
 </div>

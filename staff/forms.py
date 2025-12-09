@@ -27,9 +27,9 @@ class EmployeForm(forms.ModelForm):
         fields = [
             'nom', 'prenom', 'date_naissance', 'lieu_naissance', 'nationalite',
             'sexe', 'etat_civil', 'adresse', 'ville', 'pays', 'phone', 'email',
-            'poste', 'departement', 'date_embauche', 'salaire',
+            'poste', 'departement', 'date_embauche', 
             'cv', 'contrat', 'photo',
-            'contact_urgence_nom', 'contact_urgence_phone', 'contact_urgence_relation',
+             'contact_urgence_phone',
         ]
 
         widgets = {
@@ -47,13 +47,10 @@ class EmployeForm(forms.ModelForm):
             'poste': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': "Poste"}),
             'departement': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': "Département"}),
             'date_embauche': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
-            'salaire': forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
             'cv': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
             'contrat': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
             'photo': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
-            'contact_urgence_nom': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': "Nom contact d'urgence"}),
             'contact_urgence_phone': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': "Téléphone contact d'urgence"}),
-            'contact_urgence_relation': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': "Relation"}),
         }
 
     # Tes validations personnalisées (inchangées)
@@ -202,3 +199,8 @@ class IncidentForm(forms.ModelForm):
             'sanction': forms.Select(),
             'description': forms.Textarea(attrs={'rows': 3}),
         }
+
+class EmployeDocumentsForm(forms.ModelForm):
+    class Meta:
+        model = Employe
+        fields = ['photo', 'cv', 'contrat']

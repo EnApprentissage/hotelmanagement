@@ -282,78 +282,92 @@ def reservations_calendar_data(request):
     })
     return JsonResponse(events, safe=False)
 
+
 @login_required
 def arrivees_du_jour(request):
-    aujourd_hui = datetime.today().date()
-    arrivees = Reservation.objects.filter(date_arrivee=aujourd_hui, statut__in=['confirmée', 'en_attente'])
-    return render(request, 'reservations/arrivées.html', {'arrivees': arrivees})
+    aujourd_hui = timezone.localdate()  # ← plus propre que datetime.today()
+    
+    arrivees = Reservation.objects.filter(
+        date_arrivee=aujourd_hui
+    ).exclude(
+        statut__in=['annulee', 'no_show', 'terminee']  # on enlève les annulées et déjà parties
+    ).select_related('client', 'chambre', 'chambre__type_chambre') \
+     .order_by('chambre__numero')
+
+    return render(request, 'reservations/arrivees.html', {
+        'arrivees': arrivees,
+        'today': aujourd_hui
+    })
+
 
 @login_required
 def departs_du_jour(request):
-    aujourd_hui = datetime.today().date()
-    departs = Reservation.objects.filter(date_depart=aujourd_hui, statut='en_cours')
-    return render(request, 'reservations/departs.html', {'departs': departs})
+    aujourd_hui = timezone.localdate()
+
+    # ON AFFICHE TOUTES les réservations qui partent aujourd'hui
+    # même si le check-out est déjà fait → pour voir l'historique du jour
+    departs = Reservation.objects.filter(
+        date_depart=aujourd_hui
+    ).exclude(
+        statut__in=['annulee', 'no_show']  # on enlève juste les annulées/no-show
+    ).select_related('client', 'chambre', 'chambre__type_chambre') \
+     .order_by('-date_checkout', 'chambre__numero')  # les check-out faits en premier
+
+    return render(request, 'reservations/departs.html', {
+        'departs': departs,
+        'today': aujourd_hui
+    })
+
 
 @login_required
 def check_in(request, pk):
-    reservation = get_object_or_404(Reservation, pk=pk, cree_par__hotel=request.user.hotel)
+    reservation = get_object_or_404(Reservation, pk=pk)
 
-    # Vérifications de sécurité
     if reservation.statut not in ['en_attente', 'confirmée']:
         messages.error(request, f"Impossible : la réservation est déjà {reservation.get_statut_display().lower()}.")
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('reservations:reservation_list')))
-
-    if reservation.date_arrivee != timezone.localdate():
-        messages.warning(request, "Attention : le check-in est fait hors de la date prévue.")
-    
-    # === ACTION ===
-    reservation.statut = 'en_cours'
-    reservation.date_checkin = timezone.now()  # ← On enregistre l'heure exacte !
-    reservation.save()
-
-    if reservation.chambre:
-        reservation.chambre.statut = 'occupee'
-        reservation.chambre.save(update_fields=['statut'])
-
-    # Message succès
-    messages.success(
-        request,
-        f"Check-in effectué ! {reservation.client} est maintenant dans la chambre {reservation.chambre}."
-    )
-
-    # Redirection intelligente (retour à la page précédente ou défaut)
-    redirect_to = request.META.get('HTTP_REFERER')
-    if redirect_to and 'check-in' not in redirect_to:
-        return HttpResponseRedirect(redirect_to)
     else:
-        return redirect('reservations:arrivées')  # ou 'reservations:liste'
+        reservation.statut = 'en_cours'
+        reservation.date_checkin = timezone.now()
+        reservation.save()
+
+        if reservation.chambre:
+            reservation.chambre.statut = 'occupee'
+            reservation.chambre.save(update_fields=['statut'])
+
+        messages.success(request, f"Check-in effectué pour {reservation.client} – Chambre {reservation.chambre}")
+
+    # Redirection intelligente
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'arrivees' in referer:
+        return redirect('reservations:arrivees')
+    elif 'calendrier' in referer:
+        return redirect('reservations:calendrier')
+    else:
+        return redirect('reservations:reservation_list')
 
 
 @login_required
 def check_out(request, pk):
-    reservation = get_object_or_404(Reservation, pk=pk, cree_par__hotel=request.user.hotel)
+    reservation = get_object_or_404(Reservation, pk=pk)
 
     if reservation.statut != 'en_cours':
-        messages.error(request, f"Impossible : la réservation n'est pas en cours (statut actuel : {reservation.get_statut_display()})")
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('reservations:liste')))
+        messages.error(request, f"Impossible : la réservation n'est pas en cours.")
+    else:
+        reservation.statut = 'terminee'
+        reservation.date_checkout = timezone.now()
+        reservation.save()
 
-    # === ACTION ===
-    reservation.statut = 'terminée'
-    reservation.date_checkout = timezone.now()  # ← Heure exacte du départ
-    reservation.save()
+        if reservation.chambre:
+            reservation.chambre.statut = 'sale'
+            reservation.chambre.save(update_fields=['statut'])
 
-    if reservation.chambre:
-        reservation.chambre.statut = 'sale'  # ou 'a_nettoyer'
-        reservation.chambre.save(update_fields=['statut'])
-
-    messages.success(
-        request,
-        f"Check-out effectué ! La chambre {reservation.chambre} est maintenant à nettoyer."
-    )
+        messages.success(request, f"Check-out effectué – Chambre {reservation.chambre} à nettoyer")
 
     # Redirection intelligente
-    redirect_to = request.META.get('HTTP_REFERER')
-    if redirect_to and 'check-out' not in redirect_to:
-        return HttpResponseRedirect(redirect_to)
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'departs' in referer:
+        return redirect('reservations:departs')
+    elif 'calendrier' in referer:
+        return redirect('reservations:calendrier')
     else:
-        return redirect('reservations:departs')  # ou 'reservations:liste'
+        return redirect('reservations:reservation_list')

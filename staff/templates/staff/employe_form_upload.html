@@ -1,0 +1,43 @@
+<form method="post" enctype="multipart/form-data" action="{% url 'staff:employe_documents_upload' pk=employe.pk %}" class="js-entity-upload-form">
+    {% csrf_token %}
+    <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fa fa-plus"></i> Telecharger l'image profil d'un employer</h5>
+        <button class="btn-close btn-close-white" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+       <div class="container">
+        {% csrf_token %}
+    <div class="mb-3">
+        <label>Photo</label>
+        <input type="file" name="photo" class="form-control">
+        {% if employe.photo %}
+            <a href="{{ employe.photo.url }}" target="_blank">Voir la photo</a>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label>CV</label>
+        <input type="file" name="cv" class="form-control">
+        {% if employe.cv %}
+            <a href="{{ employe.cv.url }}" target="_blank">Voir le CV</a>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label>Contrat</label>
+        <input type="file" name="contrat" class="form-control">
+        {% if employe.contrat %}
+            <a href="{{ employe.contrat.url }}" target="_blank">Voir le contrat</a>
+        {% endif %}
+    </div>
+    </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="fa fa-upload"></i> Télécharger l'image
+        </button>
+    </div>
+</form>
+
+

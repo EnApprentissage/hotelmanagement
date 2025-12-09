@@ -1,655 +1,456 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
-{% block title %}Gestion des Chambres{% endblock title %}
+{% block title %}Gestion des Chambres{% endblock %}
 
 {% block extra_css %}
 <style>
-  .badge-status {
-    font-size: 0.75rem;
-    padding: 0.35em 0.65em;
-  }
-  .chambre-card {
-    transition: transform 0.2s;
-  }
-  .chambre-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-  .statut-disponible { background-color: #28a745; }
-  .statut-reservee { background-color: #ffc107; }
-  .statut-occupee { background-color: #007bff; }
-  .statut-sale { background-color: #dc3545; }
-  .statut-en_nettoyage { background-color: #17a2b8; }
-  .statut-propre { background-color: #20c997; }
-  .statut-en_maintenance { background-color: #fd7e14; }
-  .statut-hors_service { background-color: #6c757d; }
+    .statut-badge {
+        font-size: 0.75rem;
+        padding: 0.4em 0.8em;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+    
+    /* Couleurs selon statut */
+    .badge-disponible { background-color: #28a745; color: white; }
+    .badge-reservee { background-color: #ffc107; color: #000; }
+    .badge-occupee { background-color: #007bff; color: white; }
+    .badge-sale { background-color: #dc3545; color: white; }
+    .badge-en-nettoyage { background-color: #17a2b8; color: white; }
+    .badge-propre { background-color: #20c997; color: white; }
+    .badge-maintenance { background-color: #6c757d; color: white; }
+    .badge-hors-service { background-color: #343a40; color: white; }
+    
+    .action-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin: 2px;
+    }
+    
+    .card-stat {
+        border-radius: 0.5rem;
+        transition: transform 0.2s;
+    }
+    
+    .card-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 </style>
-{% endblock extra_css %}
+{% endblock %}
 
 {% block content %}
 <div class="wrapper d-flex flex-column min-vh-100">
-  <header class="header header-sticky p-0 mb-4">
-    {% include 'includes/navbar.html' %}
-    <div class="container-fluid px-4">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb my-0">
-          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
-          <li class="breadcrumb-item active"><span>Chambres</span></li>
-        </ol>
-      </nav>
-    </div>
-  </header>
-  
-  <div class="container-fluid px-4 py-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h5 class="mb-0">
-        <i class="fa fa-bed me-2 text-primary"></i> Liste des Chambres
-      </h5>
-      <div class="text-muted">
-        <small>
-          <i class="fa fa-info-circle"></i> 
-          Les chambres sont gérées via l'interface d'administration
-        </small>
-      </div>
-    </div>
+    <header class="header header-sticky p-0 mb-4">
+        {% include 'includes/navbar.html' %}
+        <div class="container-fluid px-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb my-0">
+                    <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                    <li class="breadcrumb-item active">Chambres</li>
+                </ol>
+            </nav>
+        </div>
+    </header>
 
-    <!-- Filtres -->
-    <div class="card mb-3">
-      <div class="card-body py-2">
-        <form method="get" class="row g-2 align-items-center">
-          <div class="col-md-3">
-            <select name="statut" class="form-select form-select-sm">
-              <option value="">Tous les statuts</option>
-              <option value="disponible" {% if request.GET.statut == 'disponible' %}selected{% endif %}>Disponible</option>
-              <option value="reservee" {% if request.GET.statut == 'reservee' %}selected{% endif %}>Réservée</option>
-              <option value="occupee" {% if request.GET.statut == 'occupee' %}selected{% endif %}>Occupée</option>
-              <option value="sale" {% if request.GET.statut == 'sale' %}selected{% endif %}>Sale</option>
-              <option value="en_nettoyage" {% if request.GET.statut == 'en_nettoyage' %}selected{% endif %}>En nettoyage</option>
-              <option value="propre" {% if request.GET.statut == 'propre' %}selected{% endif %}>Propre</option>
-              <option value="en_maintenance" {% if request.GET.statut == 'en_maintenance' %}selected{% endif %}>En maintenance</option>
-              <option value="hors_service" {% if request.GET.statut == 'hors_service' %}selected{% endif %}>Hors service</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <select name="etage" class="form-select form-select-sm">
-              <option value="">Tous les étages</option>
-              {% for etage in etages %}
-                <option value="{{ etage }}" {% if request.GET.etage == etage|stringformat:"s" %}selected{% endif %}>
-                  Étage {{ etage }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <select name="type" class="form-select form-select-sm">
-              <option value="">Tous les types</option>
-              {% for type_chambre in types_chambres %}
-                <option value="{{ type_chambre.id }}" {% if request.GET.type == type_chambre.id|stringformat:"s" %}selected{% endif %}>
-                  {{ type_chambre.nom }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <input type="text" 
-                   name="search" 
-                   class="form-control form-control-sm"
-                   placeholder="🔍 Rechercher par numéro..."
-                   value="{{ search }}">
-          </div>
-          <div class="col-md-2">
-            <button type="submit" class="btn btn-sm btn-primary" title="Filtrer">
-              <i class="cil-magnifying-glass"></i> 
-            </button>
-            <a href="{% url 'chambres:chambre_list' %}" class="btn btn-sm btn-secondary" title="Réinitialiser">
-              <i class="cil-loop-circular"></i>
-            </a>
-          </div>
-        </form>
-      </div>
-    </div>
+    <div class="container-fluid px-4 py-3">
+        <!-- En-tête -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">
+                <i class="cil-room me-2 text-primary"></i> Liste des Chambres
+            </h5>
+            
+        </div>
 
-    <!-- Statistiques rapides -->
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <div class="card text-white bg-success">
-          <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-0">Disponibles</h6>
-                <h4 class="mb-0">{{ stats.disponible|default:0 }}</h4>
-              </div>
-              <i class="fa fa-check-circle fa-2x opacity-50"></i>
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card text-white bg-primary">
-          <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-0">Occupées</h6>
-                <h4 class="mb-0">{{ stats.occupee|default:0 }}</h4>
-              </div>
-              <i class="fa fa-user fa-2x opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card text-white bg-warning">
-          <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-0">Réservées</h6>
-                <h4 class="mb-0">{{ stats.reservee|default:0 }}</h4>
-              </div>
-              <i class="fa fa-calendar fa-2x opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card text-white bg-danger">
-          <div class="card-body py-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-0">À nettoyer</h6>
-                <h4 class="mb-0">{{ stats.sale|default:0 }}</h4>
-              </div>
-              <i class="fa fa-broom fa-2x opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            {% endfor %}
+        {% endif %}
 
-    <!-- Tableau des chambres -->
-    <div class="card"> 
-      <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
-        <div class="d-flex align-items-center gap-2">
-          <i class="icon icon-xxl cil-home"></i>
-          <h5 class="card-title mb-0">Chambres</h5>
-        </div>
-        <span class="badge bg-light text-dark">{{ page_obj.paginator.count }} chambre(s)</span>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle">
-            <thead>
-              <tr>
-                <th class="text-center">N°</th>
-                <th>Numéro</th>
-                <th>Type</th>
-                <th class="text-center">Étage</th>
-                <th>Capacité</th>
-                <th class="text-end">Prix/Nuit</th>
-                <th class="text-center">Statut</th>
-                <th class="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for chambre in page_obj %}
-                <tr>
-                  <td class="text-center">
-                    {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
-                  </td>
-                  
-                  <td>
-                    <strong class="text-primary">{{ chambre.numero }}</strong>
-                  </td>
-                  
-                  <td>
-                    <div>{{ chambre.type_chambre.nom }}</div>
-                    {% if chambre.type_chambre.superficie %}
-                      <small class="text-muted">
-                        <i class="fa fa-expand-arrows-alt"></i> {{ chambre.type_chambre.superficie }} m²
-                      </small>
-                    {% endif %}
-                  </td>
-                  
-                  <td class="text-center">
-                    <span class="badge bg-secondary">{{ chambre.etage }}</span>
-                  </td>
-                  
-                  <td>
-                    <small>
-                      <i class="fa fa-user"></i> {{ chambre.type_chambre.capacite_adultes }} adulte(s)
-                      {% if chambre.type_chambre.capacite_enfants > 0 %}
-                        <br><i class="fa fa-child"></i> {{ chambre.type_chambre.capacite_enfants }} enfant(s)
-                      {% endif %}
-                    </small>
-                  </td>
-                  
-                  <td class="text-end">
-                    <strong>{{ chambre.type_chambre.prix_base|floatformat:0 }} FBU</strong>
-                  </td>
-                  
-                  <td class="text-center">
-                    <span class="badge statut-{{ chambre.statut }} badge-status">
-                      {{ chambre.get_statut_display }}
-                    </span>
-                  </td>
-                  
-                  <td class="text-center">
-                    <!-- Voir détails -->
-                    <a href="{% url 'chambres:chambre_detail' chambre.pk %}" 
-                       class="btn btn-sm text-info" 
-                       title="Voir détails">
-                      <i class="icon cil-folder-open"></i>
-                    </a>
-
-                    
-                    
-                    <!-- Changer statut -->
-                    <div class="btn-group" role="group">
-                      <button type="button" 
-                              class="btn btn-sm text-warning dropdown-toggle" 
-                              data-bs-toggle="dropdown" 
-                              title="Changer le statut">
-                        <i class="icon cil-settings"></i>
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
-                        <li><h6 class="dropdown-header">Changer le statut</h6></li>
-                        <li><hr class="dropdown-divider"></li>
-                        {% for value, label in statuts %}
-                          {% if value != chambre.statut %}
-                            <li>
-                              <a class="dropdown-item js-change-status" 
-                                 href="#"
-                                 data-url="{% url 'chambres:chambre_status' chambre.pk %}"
-                                 data-statut="{{ value }}"
-                                 data-chambre="{{ chambre.numero }}">
-                                <span class="badge statut-{{ value }} me-2">{{ label }}</span>
-                              </a>
-                            </li>
-                          {% endif %}
-                        {% endfor %}
-                      </ul>
+        <!-- Statistiques -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card card-stat bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fs-4 fw-bold">{{ stats.disponibles }}</div>
+                                <div>Disponibles</div>
+                            </div>
+                            <i class="cil-check-circle fs-1 opacity-50"></i>
+                        </div>
                     </div>
-                    
-                    
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="8" class="text-center py-5 text-muted">
-                    <i class="fa fa-bed fa-3x mb-3 opacity-25"></i>
-                    <p class="mb-3">Aucune chambre trouvée</p>
-                    {% if search %}
-                      <a href="{% url 'chambres:chambre_list' %}" class="btn btn-sm btn-secondary">
-                        <i class="fa fa-times"></i> Effacer la recherche
-                      </a>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stat bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fs-4 fw-bold">{{ stats.occupees }}</div>
+                                <div>Occupées</div>
+                            </div>
+                            <i class="cil-people fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stat bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fs-4 fw-bold">{{ stats.reservees }}</div>
+                                <div>Réservées</div>
+                            </div>
+                            <i class="cil-calendar fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stat bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fs-4 fw-bold">{{ stats.a_nettoyer }}</div>
+                                <div>À nettoyer</div>
+                            </div>
+                            <i class="cil-warning fs-1 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Filtres -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <form method="get" class="row g-2">
+                    <div class="col-md-3">
+                        <select name="statut" class="form-select form-select-sm">
+                            <option value="">Tous les statuts</option>
+                            <option value="disponible" {% if request.GET.statut == 'disponible' %}selected{% endif %}>Disponible</option>
+                            <option value="occupee" {% if request.GET.statut == 'occupee' %}selected{% endif %}>Occupée</option>
+                            <option value="reservee" {% if request.GET.statut == 'reservee' %}selected{% endif %}>Réservée</option>
+                            <option value="sale" {% if request.GET.statut == 'sale' %}selected{% endif %}>Sale (à nettoyer)</option>
+                            <option value="en_nettoyage" {% if request.GET.statut == 'en_nettoyage' %}selected{% endif %}>En nettoyage</option>
+                            <option value="propre" {% if request.GET.statut == 'propre' %}selected{% endif %}>Propre</option>
+                            <option value="maintenance" {% if request.GET.statut == 'maintenance' %}selected{% endif %}>En maintenance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="etage" class="form-select form-select-sm">
+                            <option value="">Tous les étages</option>
+                            {% for e in etages %}
+                                <option value="{{ e }}" {% if request.GET.etage == e|stringformat:"s" %}selected{% endif %}>
+                                    Étage {{ e }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="type" class="form-select form-select-sm">
+                            <option value="">Tous les types</option>
+                            {% for type in types_chambres %}
+                                <option value="{{ type.id }}" {% if request.GET.type == type.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ type.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="search" class="form-control form-control-sm" 
+                               placeholder="🔍 Rechercher..." value="{{ request.GET.search }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="cil-magnifying-glass"></i> Filtrer
+                        </button>
+                        <a href="{% url 'chambres:chambre_list' %}" class="btn btn-sm btn-secondary">
+                            <i class="cil-reload"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tableau -->
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="cil-home fs-4"></i>
+                    <h5 class="mb-0">Chambres</h5>
+                </div>
+                <span class="badge bg-light text-dark">{{ chambres.count }} chambre(s)</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center">N°</th>
+                                <th>Numéro</th>
+                                <th>Type</th>
+                                <th class="text-center">Étage</th>
+                                <th class="text-center">Capacité</th>
+                                <th class="text-end">Prix/Nuit</th>
+                                <th class="text-center">Statut</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chambre in chambres %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td>
+                                    <strong class="fs-5">{{ chambre.numero }}</strong>
+                                    {% if chambre.superficie %}
+                                        <br><small class="text-muted">{{ chambre.superficie }} m²</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ chambre.type_chambre.nom }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">
+                                        <i class="cil-elevator"></i> {{ chambre.etage }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <i class="cil-people"></i> {{ chambre.capacite }} adulte(s)
+                                </td>
+                                <td class="text-end">
+                                    <strong>{{ chambre.prix_nuit|floatformat:0 }} FBU</strong>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge statut-badge badge-{{ chambre.statut }}">
+                                        {{ chambre.get_statut_display }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <!-- Voir détails -->
+                                        <a href="{% url 'chambres:chambre_detail' chambre.pk %}" 
+                                           class="btn btn-sm btn-outline-info" title="Voir détails">
+                                            <i class="cil-info"></i>
+                                        </a>
+
+                                        <!-- Modifier -->
+                                        <button type="button" class="btn btn-sm btn-outline-primary js-update-entity" 
+                                                data-url="{% url 'chambres:chambre_update' chambre.pk %}" 
+                                                title="Modifier">
+                                            <i class="cil-pencil"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- ACTIONS DE NETTOYAGE -->
+                                    <div class="mt-2">
+                                        {% if chambre.statut == 'sale' %}
+                                            <!-- Commencer le nettoyage -->
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-info action-btn btn-start-cleaning" 
+                                                    data-chambre-id="{{ chambre.pk }}"
+                                                    data-chambre-numero="{{ chambre.numero }}"
+                                                    title="Commencer le nettoyage">
+                                                <i class="cil-brush"></i> Nettoyer
+                                            </button>
+                                        {% elif chambre.statut == 'en_nettoyage' %}
+                                            <!-- Terminer le nettoyage -->
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-success action-btn btn-finish-cleaning" 
+                                                    data-chambre-id="{{ chambre.pk }}"
+                                                    data-chambre-numero="{{ chambre.numero }}"
+                                                    title="Marquer comme propre">
+                                                <i class="cil-check-circle"></i> Propre
+                                            </button>
+                                        {% elif chambre.statut == 'propre' %}
+                                            <span class="badge bg-success">
+                                                <i class="cil-check-circle"></i> Nettoyée
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="cil-room fs-1 mb-3 opacity-25"></i>
+                                    <p>Aucune chambre trouvée</p>
+                                    <button type="button" class="btn btn-sm btn-primary js-create-entity"
+                                            data-url="{% url 'chambres:chambre_create' %}">
+                                        <i class="cil-plus"></i> Créer une chambre
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <nav class="mt-3">
-      <ul class="pagination pagination-sm justify-content-center">
-        {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.etage %}&etage={{ request.GET.etage }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">«</a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.etage %}&etage={{ request.GET.etage }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">‹</a>
-          </li>
-        {% endif %}
-
-        <li class="page-item disabled">
-          <span class="page-link">
-            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-          </span>
-        </li>
-
-        {% if page_obj.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.etage %}&etage={{ request.GET.etage }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">›</a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.etage %}&etage={{ request.GET.etage }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">»</a>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
-    {% endif %}
-
-    <!-- Modal -->
-    <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
+<!-- Modal -->
+<div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content"></div>
-      </div>
     </div>
-  </div>
 </div>
 
 {% csrf_token %}
-{% endblock content %}
+{% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("=== Script Chambre List chargé ===");
-    
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("=== Script Chambres chargé ===");
+
     // ========================================
-    // CHANGEMENT DE STATUT
+    // COMMENCER LE NETTOYAGE
     // ========================================
-    $(document).on("click", ".js-change-status", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = $(this);
-        const url = btn.data('url');
-        const statut = btn.data('statut');
-        const chambre = btn.data('chambre');
-        const statusLabel = btn.find('.badge').text().trim();
-        
-        console.log("=== Changement de statut ===", chambre, statut);
-        
-        Swal.fire({
-            title: 'Changer le statut ?',
-            html: `
-                <p class="mb-3">Voulez-vous changer le statut de la <strong>Chambre ${chambre}</strong> à :</p>
-                <p class="fs-5"><strong>${statusLabel}</strong></p>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#007bff',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fa fa-check"></i> Oui, changer',
-            cancelButtonText: '<i class="fa fa-times"></i> Annuler',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Changement en cours...',
-                    html: 'Veuillez patienter',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: {
-                        'statut': statut,
-                        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
-                    },
-                    dataType: 'json',
-                    success: function(data) {
-                        console.log("=== Réponse changement statut ===", data);
-                        
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Statut modifié !',
-                                text: data.message || `Le statut a été changé avec succès.`,
-                                timer: 2000,
-                                showConfirmButton: true
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erreur !',
-                                text: data.error || 'Impossible de changer le statut.'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error("Erreur AJAX:", xhr);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Erreur !',
-                            text: 'Une erreur est survenue lors du changement de statut.'
-                        });
-                    }
-                });
-            }
-        });
-    });
-    
-    // ========================================
-    // SUPPRESSION AVEC SWEETALERT2
-    // ========================================
-    const attachDeleteListeners = () => {
-        const deleteButtons = document.querySelectorAll(".delete-btn");
-        
-        deleteButtons.forEach(btn => {
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const url = newBtn.dataset.url;
-                const nom = newBtn.dataset.name;
-                
-                Swal.fire({
-                    title: `Supprimer ${nom} ?`,
-                    text: "Cette action est irréversible !",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#d33",
-                    cancelButtonColor: "#6c757d",
-                    confirmButtonText: '<i class="fa fa-trash"></i> Oui, supprimer',
-                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
-                    reverseButtons: true
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Suppression en cours...',
-                            html: 'Veuillez patienter',
-                            allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                        
-                        fetch(url, {
-                            method: "POST",
-                            headers: {
-                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
-                            },
-                        })
-                        .then(resp => resp.json())
-                        .then(data => {
-                            if(data.form_is_valid || data.success){
-                                Swal.fire({
-                                    icon: "success",
-                                    title: "Supprimé !",
-                                    text: "La chambre a été supprimée avec succès.",
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                }).then(() => {
-                                    window.location.reload();
-                                });
-                            } else if (data.error) {
-                                Swal.fire({
-                                    icon: "error",
-                                    title: "Impossible !",
-                                    text: data.error
-                                });
-                            } else {
-                                Swal.fire("Erreur !", "Impossible de supprimer.", "error");
-                            }
-                        })
-                        .catch((error) => {
-                            console.error("Erreur:", error);
-                            Swal.fire("Erreur !", "Une erreur est survenue.", "error");
-                        });
-                    }
-                });
+    document.querySelectorAll('.btn-start-cleaning').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chambreId = this.dataset.chambreId;
+            const chambreNumero = this.dataset.chambreNumero;
+
+            Swal.fire({
+                title: '🧹 Commencer le nettoyage ?',
+                html: `
+                    <p>Vous allez commencer le nettoyage de la <strong>Chambre ${chambreNumero}</strong>.</p>
+                    <p class="text-muted small">Le statut passera à "En nettoyage"</p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="cil-brush"></i> Oui, commencer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    updateChambreStatus(chambreId, 'en_nettoyage', 'Nettoyage commencé', chambreNumero);
+                }
             });
         });
-    };
-    
-    attachDeleteListeners();
-    
-    // ========================================
-    // MODAL AJAX (Update uniquement)
-    // ========================================
-    var idModalEntity = "#modal-entity";
-    var clUpdateEntity = ".js-update-entity";
+    });
 
-    // Charger le formulaire dans la modal
-    function loadForm() {
-        var btn = $(this);
-        console.log("=== Chargement du formulaire chambre ===");
-        
+    // ========================================
+    // TERMINER LE NETTOYAGE (Marquer propre)
+    // ========================================
+    document.querySelectorAll('.btn-finish-cleaning').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chambreId = this.dataset.chambreId;
+            const chambreNumero = this.dataset.chambreNumero;
+
+            Swal.fire({
+                title: '✅ Nettoyage terminé ?',
+                html: `
+                    <p>Confirmer que la <strong>Chambre ${chambreNumero}</strong> est propre ?</p>
+                    <ul class="text-start small">
+                        <li>La chambre sera marquée comme "Propre"</li>
+                        <li>Elle sera disponible pour les prochains clients</li>
+                    </ul>
+                `,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="cil-check-circle"></i> Oui, c\'est propre',
+                cancelButtonText: 'Pas encore'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    updateChambreStatus(chambreId, 'propre', 'Chambre marquée comme propre', chambreNumero);
+                }
+            });
+        });
+    });
+
+    // ========================================
+    // FONCTION GÉNÉRIQUE POUR CHANGER LE STATUT
+    // ========================================
+    function updateChambreStatus(chambreId, newStatut, successMessage, chambreNumero) {
+        Swal.fire({
+            title: 'Mise à jour...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch(`/chambres/chambres/${chambreId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                statut: newStatut
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Succès !',
+                    text: `${successMessage} pour la Chambre ${chambreNumero}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: data.error || 'Impossible de mettre à jour le statut'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: 'Une erreur est survenue lors de la mise à jour'
+            });
+        });
+    }
+
+    // ========================================
+    // MODAL AJAX (Create/Update)
+    // ========================================
+    const modal = "#modal-entity";
+    
+    $(document).on("click", ".js-create-entity, .js-update-entity", function() {
+        const btn = $(this);
         $.ajax({
             url: btn.attr("data-url"),
             type: 'GET',
             dataType: 'json',
-            cache: false,
-            beforeSend: function() {
+            beforeSend: () => {
                 Swal.fire({
                     title: 'Chargement...',
                     allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    didOpen: () => Swal.showLoading()
                 });
             },
-            success: function(data) {
+            success: data => {
                 Swal.close();
-                console.log("=== Formulaire chargé ===", data);
-                
-                if (data.error) {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Attention !",
-                        text: data.error,
-                    });
-                } else {
-                    $(idModalEntity + " .modal-content").html(data.html_form);
-                    $(idModalEntity).modal('show');
-                    
-                    // Attacher submit
-                    attachFormSubmit();
-                }
+                $(modal + " .modal-content").html(data.html_form);
+                $(modal).modal('show');
             },
-            error: function(xhr) {
+            error: () => {
                 Swal.close();
-                console.error("Erreur chargement:", xhr);
-                Swal.fire({
-                    icon: "error",
-                    title: "Erreur !",
-                    text: "Impossible de charger le formulaire.",
-                });
+                Swal.fire('Erreur', 'Impossible de charger le formulaire', 'error');
             }
         });
-    }
-
-    // Attacher l'événement de soumission
-    function attachFormSubmit() {
-        $(idModalEntity).find('form').off('submit').on('submit', function(e) {
-            e.preventDefault();
-            submitFormAjax();
-        });
-    }
-    
-    // Soumettre le formulaire via AJAX
-    function submitFormAjax() {
-        var form = $(idModalEntity).find('form');
-        var formData = new FormData(form[0]);
-        var submitBtn = $(idModalEntity).find('button[type="submit"]');
-        
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> En cours...');
-        
-        console.log("=== Soumission AJAX ===");
-        console.log("URL:", form.attr("action"));
-        
-        $.ajax({
-            url: form.attr("action"),
-            data: formData,
-            type: 'POST',
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            cache: false,
-            beforeSend: function() {
-                Swal.fire({
-                    title: 'Enregistrement...',
-                    html: 'Veuillez patienter',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            },
-            success: function(data) {
-                console.log("=== Réponse reçue ===", data);
-                
-                if (data.form_is_valid === true || data.success === true) {
-                    var message = data.message || "La chambre a été modifiée avec succès.";
-                    
-                    Swal.fire({
-                        icon: "success",
-                        title: "✅ Succès !",
-                        text: message,
-                        showConfirmButton: true,
-                        confirmButtonText: 'OK',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false
-                    }).then(() => {
-                        console.log("=== Fermeture et rechargement ===");
-                        
-                        // Fermer la modal
-                        $(idModalEntity).modal('hide');
-                        $('.modal-backdrop').remove();
-                        $('body').removeClass('modal-open');
-                        
-                        // Recharger la page
-                        window.location.reload();
-                    });
-                } else if (data.error) {
-                    Swal.close();
-                    submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Enregistrer');
-                    
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Erreur !",
-                        text: data.error,
-                    });
-                } else {
-                    // Formulaire invalide : réafficher avec les erreurs
-                    Swal.close();
-                    $(idModalEntity + " .modal-content").html(data.html_form);
-                    attachFormSubmit();
-                }
-            },
-            error: function(xhr, status, error) {
-                Swal.close();
-                submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Enregistrer');
-                
-                console.error("Erreur AJAX:", xhr, status, error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Erreur !",
-                    html: `<p>Erreur lors de la sauvegarde.</p>
-                           <small>Code: ${xhr.status}</small>`,
-                });
-            }
-        });
-    }
-
-    // Attacher l'événement de modification
-    $(document).on("click", clUpdateEntity, loadForm);
+    });
 });
 </script>
-{% endblock extra_js %}
+{% endblock %}

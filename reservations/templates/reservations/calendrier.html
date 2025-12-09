@@ -1,48 +1,7 @@
-<!-- templates/reservations/calendrier.html -->
 {% extends 'layouts/base.html' %}
 {% load static %}
 
 {% block title %}Calendrier des Réservations{% endblock %}
-
-{% block content %}
-<div class="wrapper d-flex flex-column min-vh-100">
-  <header class="header header-sticky p-0 mb-4">
-    {% include 'includes/navbar.html' %}
-    <div class="container-fluid px-4">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb my-0">
-          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
-          <li class="breadcrumb-item active"><span>Réservations</span></li>
-        </ol>
-      </nav>
-    </div>
-  </header>
-
-<div class="body flex-grow-1 px-3">
-    <div class="container-lg">
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">
-                            <i class="cil-calendar me-2"></i>
-                            Calendrier des Réservations
-                        </h4>
-                        <button type="button" class="btn btn-sm btn-primary js-create-entity" title="Nouvelle réservation"
-                            data-url="{% url 'reservations:reservation_create' %}">
-                            <i class="cil-calendar-check"></i> Nouvelle Réservation
-                        </button>
-                    </div>
-                    <div class="card-body p-4 bg-white">
-                        <div id="calendar"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% endblock content %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
@@ -67,13 +26,65 @@
 </style>
 {% endblock extra_css %}
 
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+  <header class="header header-sticky p-0 mb-4">
+    {% include 'includes/navbar.html' %}
+    <div class="container-fluid px-4">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb my-0">
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+          <li class="breadcrumb-item active"><span>Calendrier</span></li>
+        </ol>
+      </nav>
+    </div>
+  </header>
+
+  <div class="body flex-grow-1 px-3">
+    <div class="container-lg">
+      <div class="row">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+              <h4 class="mb-0">
+                <i class="cil-calendar me-2"></i>
+                Calendrier des Réservations
+              </h4>
+              <button type="button" class="btn btn-light btn-sm js-create-entity" 
+                      title="Nouvelle réservation"
+                      data-url="{% url 'reservations:reservation_create' %}">
+                <i class="cil-calendar-check"></i> Nouvelle Réservation
+              </button>
+            </div>
+            <div class="card-body p-4 bg-white">
+              <div id="calendar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pour création/modification -->
+  <div class="modal fade" id="modal-entity" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content"></div>
+    </div>
+  </div>
+</div>
+
+{% csrf_token %}
+{% endblock content %}
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    console.log("=== Initialisation Calendrier ===");
+    
     var calendarEl = document.getElementById('calendar');
-
-    var calendar = new FullCalendar.Calendar(calendarEl, {
+    
+    window.calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         height: 'auto',
         locale: 'fr',
@@ -83,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
         },
         buttonText: {
-            today: 'Aujourd’hui',
+            today: 'Aujourd\'hui',
             month: 'Mois',
             week: 'Semaine',
             day: 'Jour',
@@ -95,10 +106,114 @@ document.addEventListener('DOMContentLoaded', function () {
                 info.jsEvent.preventDefault();
                 window.location.href = info.event.url;
             }
+        },
+        eventDidMount: function(info) {
+            // Tooltip sur hover
+            info.el.title = info.event.title;
         }
     });
 
     calendar.render();
+    console.log("Calendrier rendu avec succès");
+
+    // ========================================
+    // MODAL AJAX (Création / Modification)
+    // ========================================
+    const modal = "#modal-entity";
+    
+    const loadForm = function() {
+        const btn = $(this);
+        $.ajax({
+            url: btn.attr("data-url"),
+            type: "GET",
+            dataType: "json",
+            beforeSend: () => {
+                Swal.fire({
+                    title: "Chargement...",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+            },
+            success: data => {
+                Swal.close();
+                if (data.html_form) {
+                    $(modal + " .modal-content").html(data.html_form);
+                    $(modal).modal("show");
+                    initFormEvents();
+                } else if (data.error) {
+                    Swal.fire("Attention", data.error, "warning");
+                }
+            },
+            error: () => {
+                Swal.close();
+                Swal.fire("Erreur", "Impossible de charger le formulaire.", "error");
+            }
+        });
+    };
+
+    const initFormEvents = () => {
+        $(modal).find("form").off("submit").on("submit", function(e) {
+            e.preventDefault();
+            submitFormAjax();
+        });
+    };
+
+    const submitFormAjax = () => {
+        const form = $(modal).find("form");
+        const submitBtn = form.find("button[type=submit]");
+        const formData = new FormData(form[0]);
+
+        submitBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> En cours...');
+
+        $.ajax({
+            url: form.attr("action"),
+            data: formData,
+            type: "POST",
+            processData: false,
+            contentType: false,
+            dataType: "json",
+            beforeSend: () => {
+                Swal.fire({
+                    title: "Enregistrement...",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+            },
+            success: data => {
+                if (data.form_is_valid || data.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Succès !",
+                        text: data.message || "Réservation enregistrée avec succès !",
+                        timer: 1800,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $(modal).modal("hide");
+                        $(".modal-backdrop").remove();
+                        $("body").removeClass("modal-open").css("padding-right", "");
+                        
+                        // Rafraîchir le calendrier
+                        if (calendar) {
+                            calendar.refetchEvents();
+                            console.log("Calendrier rafraîchi");
+                        }
+                    });
+                } else {
+                    Swal.close();
+                    submitBtn.prop("disabled", false).html("Enregistrer");
+                    $(modal + " .modal-content").html(data.html_form);
+                    initFormEvents();
+                }
+            },
+            error: () => {
+                Swal.close();
+                submitBtn.prop("disabled", false).html("Enregistrer");
+                Swal.fire("Erreur", "Problème serveur ou connexion.", "error");
+            }
+        });
+    };
+
+    $(document).on("click", ".js-create-entity, .js-update-entity", loadForm);
 });
 </script>
 {% endblock extra_js %}

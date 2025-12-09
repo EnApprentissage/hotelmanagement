@@ -51,13 +51,7 @@ class Employe(models.Model):
     poste = models.CharField(_("Poste"), max_length=100)
     departement = models.CharField(_("Département"), max_length=100)
     date_embauche = models.DateField(_("Date d'embauche"), null=True, blank=True)
-    salaire = models.DecimalField(
-        _("Salaire"),
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True
-    )
+    
 
     # === DOCUMENTS & MÉDIAS ===
     cv = models.FileField(upload_to='cv_employes/', blank=True, null=True, verbose_name=_("CV"))
@@ -80,10 +74,8 @@ class Employe(models.Model):
     )
 
     # === URGENCE ===
-    contact_urgence_nom = models.CharField(_("Nom contact urgence"), max_length=100, blank=True)
     contact_urgence_phone = models.CharField(_("Téléphone urgence"), max_length=20, blank=True)
-    contact_urgence_relation = models.CharField(_("Relation"), max_length=50, blank=True)
-
+    
     # === AUDIT ===
     date_creation = models.DateTimeField(auto_now_add=True, verbose_name=_("Créé le"))
     date_modification = models.DateTimeField(auto_now=True, verbose_name=_("Modifié le"))

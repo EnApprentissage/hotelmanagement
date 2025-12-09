@@ -135,7 +135,7 @@
                       <i class="icon cil-pencil"></i>
                     </button>
                     <button type="button" class="btn btn-sm text-warning js-upload-entity" title="fichier"
-                            data-url="{% url 'staff:employe_update' employe.pk %}">
+                            data-url="{% url 'staff:employe_documents_upload' employe.pk %}">
                       <i class="icon cil-file"></i>
                     </button>
                     <button type="button" class="btn btn-sm text-danger delete-btn" title="supprimé"
@@ -288,19 +288,31 @@ document.addEventListener("DOMContentLoaded", () => {
     attachDeleteListeners();
     
     // ========================================
-    // MODAL AJAX (Create/Update)
+    // VARIABLES GLOBALES
     // ========================================
     var idModalEntity = "#modal-entity";
     var clCreateEntity = ".js-create-entity";
     var clUpdateEntity = ".js-update-entity";
-
+    var clUploadEntity = ".js-upload-entity";
+    
+    // Fonction pour construire les URLs dynamiquement
+    function getUrlWithId(urlPattern, id) {
+        // Remplacer le placeholder par l'ID réel
+        return urlPattern.replace('0', id);
+    }
+    
+    // ========================================
+    // CHARGEMENT DES FORMULAIRES
+    // ========================================
+    
     // Charger le formulaire dans la modal
     function loadForm() {
         var btn = $(this);
         console.log("=== Chargement du formulaire ===");
+        var url = btn.attr("data-url");
         
         $.ajax({
-            url: btn.attr("data-url"),
+            url: url,
             type: 'GET',
             dataType: 'json',
             cache: false,
@@ -331,8 +343,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     $(idModalEntity + " .modal-content").html(data.html_form);
                     $(idModalEntity).modal('show');
                     
-                    // Attacher les événements
-                    attachFormButtonListeners();
+                    // Attacher les événements selon le type de formulaire
+                    if (btn.hasClass('js-update-entity') || btn.hasClass('js-create-entity')) {
+                        attachFormButtonListeners();
+                    } else if (btn.hasClass('js-upload-entity')) {
+                        attachUploadFormListeners();
+                    }
                 }
             },
             error: function(xhr) {
@@ -347,6 +363,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ========================================
+    // FORMULAIRE DE MISE À JOUR/CRÉATION
+    // ========================================
+    
     // Attacher les événements sur les boutons du formulaire
     function attachFormButtonListeners() {
         console.log("=== Attachement des événements des boutons ===");
@@ -358,36 +378,47 @@ document.addEventListener("DOMContentLoaded", () => {
             submitFormAjax(false);
         });
         
-        // Bouton "Valider et Verrouiller"
-        $(idModalEntity).find('.btn-validate-lock').off('click').on('click', function(e) {
-            e.preventDefault();
-            console.log("=== Bouton 'Valider et Verrouiller' cliqué ===");
-            
-            Swal.fire({
-                title: '⚠️ Attention !',
-                html: `
-                    <p class="mb-3"><strong>Cette action est IRRÉVERSIBLE.</strong></p>
-                    <ul class="text-start">
-                        <li>Une fois verrouillée, cette fiche ne pourra <strong>PLUS JAMAIS</strong> être modifiée</li>
-                        <li>Toutes les informations seront figées définitivement</li>
-                        <li>Même les administrateurs ne pourront pas la modifier</li>
-                    </ul>
-                    <p class="mt-3">Êtes-vous <strong>absolument certain</strong> de vouloir verrouiller ?</p>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-lock"></i> Oui, verrouiller définitivement',
-                cancelButtonText: '<i class="fa fa-times"></i> Annuler',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    console.log("=== Confirmation du verrouillage ===");
-                    // 🔥 DÉSACTIVER LES BOUTONS SEULEMENT APRÈS CONFIRMATION
-                    submitFormAjax(true);
-                }
+        // Bouton "Valider et Verrouiller" (si présent)
+        var btnValidateLock = $(idModalEntity).find('.btn-validate-lock');
+        if (btnValidateLock.length) {
+            btnValidateLock.off('click').on('click', function(e) {
+                e.preventDefault();
+                console.log("=== Bouton 'Valider et Verrouiller' cliqué ===");
+                
+                Swal.fire({
+                    title: '⚠️ Attention !',
+                    html: `
+                        <p class="mb-3"><strong>Cette action est IRRÉVERSIBLE.</strong></p>
+                        <ul class="text-start">
+                            <li>Une fois verrouillée, cette fiche ne pourra <strong>PLUS JAMAIS</strong> être modifiée</li>
+                            <li>Toutes les informations seront figées définitivement</li>
+                            <li>Même les administrateurs ne pourront pas la modifier</li>
+                        </ul>
+                        <p class="mt-3">Êtes-vous <strong>absolument certain</strong> de vouloir verrouiller ?</p>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-lock"></i> Oui, verrouiller définitivement',
+                    cancelButtonText: '<i class="fa fa-times"></i> Annuler',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("=== Confirmation du verrouillage ===");
+                        submitFormAjax(true);
+                    }
+                });
             });
+        }
+        
+        // Lien pour télécharger les fichiers
+        $(idModalEntity).find('.js-upload-link').off('click').on('click', function(e) {
+            e.preventDefault();
+            var url = $(this).data('url');
+            if (url) {
+                loadUploadForm(url);
+            }
         });
     }
     
@@ -396,16 +427,18 @@ document.addEventListener("DOMContentLoaded", () => {
         var form = $(idModalEntity).find('form');
         var formData = new FormData(form[0]);
         
-        // 🔥 DÉSACTIVER LES BOUTONS ICI (après la confirmation)
+        // DÉSACTIVER LES BOUTONS
         var btnUpdate = $(idModalEntity).find('.btn-update-normal');
         var btnLock = $(idModalEntity).find('.btn-validate-lock');
         
-        if (isLock) {
+        if (isLock && btnLock.length) {
             btnLock.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Verrouillage...');
             btnUpdate.prop('disabled', true);
         } else {
             btnUpdate.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> En cours...');
-            btnLock.prop('disabled', true);
+            if (btnLock.length) {
+                btnLock.prop('disabled', true);
+            }
         }
         
         // Ajouter le paramètre validate_lock si nécessaire
@@ -467,9 +500,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (data.error) {
                     Swal.close();
                     
-                    // 🔥 RÉACTIVER LES BOUTONS si erreur
+                    // RÉACTIVER LES BOUTONS si erreur
                     btnUpdate.prop('disabled', false).html('<i class="fas fa-save"></i> Mettre à jour');
-                    btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                    if (btnLock.length) {
+                        btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                    }
                     
                     Swal.fire({
                         icon: "warning",
@@ -493,9 +528,11 @@ document.addEventListener("DOMContentLoaded", () => {
             error: function(xhr, status, error) {
                 Swal.close();
                 
-                // 🔥 RÉACTIVER LES BOUTONS en cas d'erreur
+                // RÉACTIVER LES BOUTONS en cas d'erreur
                 btnUpdate.prop('disabled', false).html('<i class="fas fa-save"></i> Mettre à jour');
-                btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                if (btnLock.length) {
+                    btnLock.prop('disabled', false).html('<i class="fas fa-lock"></i> Valider et Verrouiller');
+                }
                 
                 console.error("Erreur AJAX:", xhr, status, error);
                 Swal.fire({
@@ -507,10 +544,200 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-
-    // Attacher les événements principaux
+    
+    // ========================================
+    // FORMULAIRE D'UPLOAD DE DOCUMENTS
+    // ========================================
+    
+    // Charger le formulaire d'upload
+    function loadUploadForm(url) {
+        console.log("=== Chargement du formulaire d'upload ===");
+        
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            beforeSend: function() {
+                Swal.fire({
+                    title: 'Chargement...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function(data) {
+                Swal.close();
+                console.log("=== Formulaire d'upload chargé ===");
+                
+                $(idModalEntity + " .modal-content").html(data.html_form);
+                $(idModalEntity).modal('show');
+                
+                attachUploadFormListeners();
+            },
+            error: function(xhr) {
+                Swal.close();
+                console.error("Erreur chargement upload:", xhr);
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Impossible de charger le formulaire d'upload.",
+                });
+            }
+        });
+    }
+    
+    // Attacher les événements pour l'upload
+    function attachUploadFormListeners() {
+        console.log("=== Attachement des événements d'upload ===");
+        
+        // Gestion de la soumission du formulaire d'upload
+        $(idModalEntity).find('form').off('submit').on('submit', function(e) {
+            e.preventDefault();
+            console.log("=== Upload de fichiers ===");
+            
+            var form = $(this);
+            var formData = new FormData(form[0]);
+            var submitBtn = form.find('button[type="submit"]');
+            var employeId = form.data('employe-id') || form.find('input[name="employe_id"]').val();
+            
+            // Désactiver le bouton
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Envoi...');
+            
+            Swal.fire({
+                title: 'Upload en cours...',
+                html: 'Téléchargement des fichiers',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: form.attr("action"),
+                data: formData,
+                type: 'POST',
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                cache: false,
+                success: function(data) {
+                    Swal.close();
+                    
+                    if (data.success) {
+                        Swal.fire({
+                            icon: "success",
+                            title: "✅ Succès !",
+                            text: data.message || "Fichiers téléchargés avec succès",
+                            showConfirmButton: true
+                        }).then(() => {
+                            // Fermer la modal d'upload
+                            $(idModalEntity).modal('hide');
+                            
+                            // Si un employeId est disponible, recharger le formulaire de mise à jour
+                            if (data.employe_id || employeId) {
+                                var id = data.employe_id || employeId;
+                                console.log("=== Rechargement après upload pour employé ID:", id);
+                                
+                                // Extraire l'ID de l'employé de l'URL actuelle
+                                var updateUrl = btnUpdateUrl;
+                                if (!updateUrl) {
+                                    // Construire l'URL manuellement si nécessaire
+                                    updateUrl = '/staff/employes/' + id + '/edit/';
+                                }
+                                
+                                // Recharger le formulaire de mise à jour
+                                $.ajax({
+                                    url: updateUrl,
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    cache: false,
+                                    success: function(data) {
+                                        $(idModalEntity + " .modal-content").html(data.html_form);
+                                        $(idModalEntity).modal('show');
+                                        attachFormButtonListeners();
+                                    },
+                                    error: function(xhr) {
+                                        console.error("Erreur rechargement:", xhr);
+                                        $(idModalEntity).modal('hide');
+                                    }
+                                });
+                            } else {
+                                $(idModalEntity).modal('hide');
+                            }
+                        });
+                    } else {
+                        submitBtn.prop('disabled', false).html('<i class="fas fa-upload"></i> Télécharger');
+                        
+                        Swal.fire({
+                            icon: "error",
+                            title: "Erreur !",
+                            html: data.error || "Erreur lors de l'upload",
+                        });
+                        
+                        // Réafficher le formulaire avec erreurs
+                        if (data.html_form) {
+                            $(idModalEntity + " .modal-content").html(data.html_form);
+                            attachUploadFormListeners();
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-upload"></i> Télécharger');
+                    
+                    console.error("Erreur upload:", xhr);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Erreur !",
+                        text: "Une erreur est survenue lors de l'upload.",
+                    });
+                }
+            });
+        });
+        
+        // Bouton annuler dans l'upload
+        $(idModalEntity).find('.btn-cancel-upload').off('click').on('click', function(e) {
+            e.preventDefault();
+            var employeId = $(this).data('employe-id');
+            if (employeId) {
+                // Construire l'URL de mise à jour
+                var updateUrl = '/staff/employes/' + employeId + '/edit/';
+                
+                // Recharger le formulaire de mise à jour
+                $.ajax({
+                    url: updateUrl,
+                    type: 'GET',
+                    dataType: 'json',
+                    cache: false,
+                    success: function(data) {
+                        $(idModalEntity + " .modal-content").html(data.html_form);
+                        attachFormButtonListeners();
+                    },
+                    error: function(xhr) {
+                        console.error("Erreur rechargement:", xhr);
+                        $(idModalEntity).modal('hide');
+                    }
+                });
+            } else {
+                $(idModalEntity).modal('hide');
+            }
+        });
+    }
+    
+    // Variable globale pour stocker l'URL de mise à jour
+    var btnUpdateUrl = '';
+    
+    // Intercepter le clic sur le bouton de mise à jour pour stocker l'URL
+    $(document).on("click", clUpdateEntity, function() {
+        btnUpdateUrl = $(this).attr("data-url");
+        loadForm.call(this);
+    });
+    
     $(document).on("click", clCreateEntity, loadForm);
-    $(document).on("click", clUpdateEntity, loadForm);
+    $(document).on("click", clUploadEntity, loadForm);
 });
 </script>
 {% endblock extra_js %}

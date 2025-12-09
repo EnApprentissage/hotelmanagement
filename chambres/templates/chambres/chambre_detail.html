@@ -1,0 +1,169 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Détail Chambre {{ chambre.numero }}{% endblock %}
+
+{% block content %}
+<div class="wrapper d-flex flex-column min-vh-100">
+    <header class="header header-sticky p-0 mb-4">
+        {% include 'includes/navbar.html' %}
+        <div class="container-fluid px-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb my-0">
+                    <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                    <li class="breadcrumb-item active">Chambres</li>
+                </ol>
+            </nav>
+        </div>
+    </header>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold">🏨 Chambre {{ chambre.numero }}</h2>
+      <p class="text-muted mb-0">
+        Type : <strong>{{ chambre.type_chambre.nom }}</strong> — 
+        Étage : <strong>{{ chambre.etage }}</strong>
+      </p>
+    </div>
+
+    <div>
+      <a href="{% url 'chambres:chambre_list' %}" class="btn btn-outline-secondary">
+        ← Retour à la liste
+      </a>
+    </div>
+  </div>
+
+  <!-- Statut -->
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body d-flex align-items-center justify-content-between">
+      <div>
+        <h5 class="mb-1">Statut actuel</h5>
+        <span class="badge 
+          {% if chambre.statut == 'disponible' %}bg-success
+          {% elif chambre.statut == 'occupee' %}bg-danger
+          {% elif chambre.statut == 'reservee' %}bg-warning text-dark
+          {% else %}bg-secondary{% endif %}
+        ">
+          {{ chambre.get_statut_display }}
+        </span>
+      </div>
+
+      <div>
+        <small class="text-muted">
+          Dernière maintenance :
+          {% if chambre.date_derniere_maintenance %}
+            {{ chambre.date_derniere_maintenance|date:"d/m/Y" }}
+          {% else %}
+            Aucune
+          {% endif %}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Description -->
+  {% if chambre.description %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+      <h5 class="mb-2">📝 Description</h5>
+      <p class="mb-0">{{ chambre.description }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Notes internes -->
+  {% if chambre.notes_internes %}
+  <div class="card mb-4 border-0 shadow-sm bg-light">
+    <div class="card-body">
+      <h5 class="mb-2">🔒 Notes internes</h5>
+      <p class="mb-0">{{ chambre.notes_internes }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Historique des Maintenances -->
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+      <h5 class="mb-3">🛠️ Historique des maintenances</h5>
+
+      {% if maintenances %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Problème</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in maintenances %}
+            <tr>
+              <td>{{ m.date_signalement|date:"d/m/Y H:i" }}</td>
+              <td>{{ m.probleme|truncatechars:40 }}</td>
+              <td>
+                <span class="badge 
+                  {% if m.priorite == 'urgente' %}bg-danger
+                  {% elif m.priorite == 'haute' %}bg-warning text-dark
+                  {% else %}bg-secondary{% endif %}
+                ">
+                  {{ m.get_priorite_display }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-info">
+                  {{ m.get_statut_display }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">Aucune maintenance enregistrée.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Réservations récentes -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h5 class="mb-3">📅 Réservations récentes</h5>
+
+      {% if reservations %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Client</th>
+              <th>Arrivée</th>
+              <th>Départ</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reservations %}
+            <tr>
+              <td>{{ r.client.nom }} {{ r.client.prenom }}</td>
+              <td>{{ r.date_arrivee|date:"d/m/Y" }}</td>
+              <td>{{ r.date_depart|date:"d/m/Y" }}</td>
+              <td>
+                <span class="badge bg-success">
+                  {{ r.get_statut_display }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">Aucune réservation trouvée.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

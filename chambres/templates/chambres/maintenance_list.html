@@ -1,0 +1,125 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Liste des maintenances{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- En-tête -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold">🛠️ Maintenances des chambres</h2>
+      <p class="text-muted mb-0">Liste des maintenances créées depuis l’admin</p>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+
+        <!-- Recherche -->
+        <div class="col-md-4">
+          <label class="form-label">Recherche</label>
+          <input 
+            type="text" 
+            name="search" 
+            class="form-control"
+            placeholder="Numéro de chambre ou problème…"
+            value="{{ search|default:'' }}"
+          >
+        </div>
+
+        <!-- Filtre statut -->
+        <div class="col-md-3">
+          <label class="form-label">Statut</label>
+          <select name="statut" class="form-select">
+            <option value="">Tous</option>
+            {% for value,label in statuts %}
+              <option value="{{ value }}" {% if request.GET.statut == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Boutons -->
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            🔍 Filtrer
+          </button>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <a href="{% url 'chambres:maintenance_list' %}" class="btn btn-outline-secondary w-100">
+            🔄 Réinitialiser
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+
+      {% if maintenances %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Chambre</th>
+              <th>Problème</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in maintenances %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <span class="fw-bold">Ch. {{ m.chambre.numero }}</span>
+              </td>
+              <td>{{ m.probleme|truncatechars:40 }}</td>
+              <td>
+                <span class="badge
+                  {% if m.priorite == 'urgente' %}bg-danger
+                  {% elif m.priorite == 'haute' %}bg-warning text-dark
+                  {% else %}bg-secondary{% endif %}
+                ">
+                  {{ m.get_priorite_display }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-info">
+                  {{ m.get_statut_display }}
+                </span>
+              </td>
+              <td>{{ m.date_signalement|date:"d/m/Y H:i" }}</td>
+              <td class="text-end">
+                <a href="{% url 'chambres:maintenance_detail' m.id %}" class="btn btn-sm btn-outline-primary">
+                  👁 Voir
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="p-4 text-center text-muted">
+          Aucune maintenance trouvée.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

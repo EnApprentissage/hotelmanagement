@@ -211,6 +211,32 @@
                         <i class="icon cil-pencil"></i>
                       </button>
                     {% endif %}
+
+                    <!-- Check-in : CORRIGÉ -->
+                    {% if reservation.statut == 'en_attente' or reservation.statut == 'confirmee' %}
+                      {% if reservation.date_arrivee <= today %}
+                        <a href="{% url 'reservations:check_in' reservation.pk %}" 
+                           class="btn btn-sm btn-success" 
+                           onclick="return confirm('Confirmer le check-in de {{ reservation.client.nom_complet }} ?');">
+                          Check-in
+                        </a>
+                      {% endif %}
+                    {% elif reservation.statut == 'en_cours' and reservation.date_checkin %}
+                      <span class="badge bg-success small">✓ {{ reservation.date_checkin|time:"H:i" }}</span>
+                    {% endif %}
+
+                    <!-- Check-out : CORRIGÉ -->
+                    {% if reservation.statut == 'en_cours' %}
+                      {% if reservation.date_depart <= today %}
+                        <a href="{% url 'reservations:check_out' reservation.pk %}" 
+                           class="btn btn-sm btn-danger" 
+                           onclick="return confirm('Confirmer le check-out de {{ reservation.client.nom_complet }} ?');">
+                          Check-out
+                        </a>
+                      {% endif %}
+                    {% elif reservation.statut == 'terminee' and reservation.date_checkout %}
+                      <span class="badge bg-dark small">✓ {{ reservation.date_checkout|time:"H:i" }}</span>
+                    {% endif %}
                     
                     <!-- Supprimer -->
                     {% if reservation.statut == 'en_attente' %}
@@ -307,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================
     const attachDeleteListeners = () => {
         document.querySelectorAll(".delete-btn").forEach(btn => {
-            // On recrée le bouton pour éviter les doublons d'événements
             const newBtn = btn.cloneNode(true);
             btn.replaceWith(newBtn);
 
@@ -353,7 +378,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
-                                    // Rafraîchissement intelligent
                                     if (typeof calendar !== 'undefined' && calendar?.refetchEvents) {
                                         calendar.refetchEvents();
                                     } else {
@@ -403,9 +427,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const initFormEvents = () => {
-        // Ton code existant (nouveau client, calcul total, etc.) reste ici
-        // → je ne le réécris pas pour garder ton code propre
-
         $(modal).find("form").off("submit").on("submit", function(e) {
             e.preventDefault();
             submitFormAjax();
@@ -413,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // ========================================
-    // SOUMISSION AJAX + SWEETALERT + RAFRAÎCHISSEMENT INTELLIGENT
+    // SOUMISSION AJAX
     // ========================================
     const submitFormAjax = () => {
         const form = $(modal).find("form");
@@ -449,7 +470,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         $(".modal-backdrop").remove();
                         $("body").removeClass("modal-open").css("padding-right", "");
 
-                        // Rafraîchissement magique du calendrier sans reload complet
                         if (typeof calendar !== "undefined" && calendar?.refetchEvents) {
                             console.log("Calendrier rafraîchi instantanément");
                             calendar.refetchEvents();
@@ -458,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     });
                 } else {
-                    // Erreurs de validation → réafficher le formulaire
                     Swal.close();
                     submitBtn.prop("disabled", false).html("Enregistrer");
                     $(modal + " .modal-content").html(data.html_form);
@@ -473,9 +492,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    // ========================================
-    // Lancement des événements
-    // ========================================
     $(document).on("click", ".js-create-entity, .js-update-entity", loadForm);
 });
 </script>
